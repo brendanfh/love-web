@@ -103,6 +103,7 @@ Love.Graphics = (function() {
         this.canvas.elem.setAttribute('display', 'inheirit');
 
         this.mainCanvas = this.canvas;
+        this.ctx = this.canvas.ctx;
 
         this.setColor(255, 255, 255);
         this.setBackgroundColor(0, 0, 0);
@@ -110,24 +111,65 @@ Love.Graphics = (function() {
 
     //Drawing
     Graphics.prototype.arc = function(mode, x, y, rad, a1, a2, segments) {
-        this.canvas.arc(mode, x, y, rad, a1, a2, segments);
     };
 
     Graphics.prototype.circle = function(mode, x, y, rad, segments) {
-        this.canvas.circle(mode, x, y, rad, segments);
     };
 
     Graphics.prototype.clear = function(r, g, b, a) {
-        this.canvas.clear(r, g, b, a);
+        var c, ctx = this.ctx;
+        if(r == null) {
+            c = this.canvas.backgroundColor;
+        } else {
+            if(typeof r == "number") {
+                c = new Love.Color(r, g, b, a);
+            } else {
+                c = new Love.Color(r.getMember(1), r.getMember(2), r.getMember(3), r.getMember(4));
+            }
+        }
+        if(c.a == 0) { return; }
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = c.as_string;
+        ctx.globalAlpha = c.a / 255;
+        ctx.fillRect(0, 0, this.width, this.height);
+        ctx.restore();
     };
 
     Graphics.prototype.draw = function() {
-        this.canvas.draw.call(arguments);
+    };
+    
+    Graphics.prototype.line = function(x1, y1, x2, y2) {
+    };
+    
+    Graphics.prototype.point = function(x, y) {
+    };
+    
+    Graphics.prototype.polygon = function(mode, verts) {
+    };
+    
+    Graphics.prototype.present = function() { /*Unneeded in JS*/ };
+    
+    Graphics.prototype.print = function(text, x, y, r, sx, sy, ox, oy, kx, ky) {
+    };
+    
+    Graphics.prototype.printf = function(text, x, y, limit, align, r, sx, sy, ox, oy, kx, ky) {
+    };
+    
+    Graphics.prototype.rectangle = function(mode, x, y, w, h) {
     };
 
     //State
     Graphics.prototype.setColor = function(r, g, b, a) {
-        this.canvas.setColor(r, g, b, a);
+        var c, ctx = this.ctx;
+        if(typeof r == "number") {
+            c = new Love.Color(r, g, b, a);
+        } else {
+            c = new Love.Color(r.getMember(1), r.getMember(2), r.getMember(3), r.getMember(4));
+        }
+        ctx.fillStyle = c.as_string;
+        ctx.strokeStyle = c.as_string;
+        ctx.globalAlpha = c.a / 255;
     };
 
     Graphics.prototype.setBackgroundColor = function(r, g, b, a) {
@@ -145,38 +187,17 @@ Love.Graphics.Canvas2D = (function() {
         this.setDimensions(width, height);
 
         this.ctx = elem.getContext("2d");
-        this.clear(0, 0, 0, 255);
+        this.setBackgroundColor(0, 0, 0, 0);
     }
 
-    Canvas2D.prototype.clear = function(r, g, b, a) {
+    Canvas2D.prototype.setBackgroundColor = function(r, g, b, a) {
         var c;
         if(typeof r == "number") {
             c = new Love.Color(r, g, b, a);
         } else {
             c = new Love.Color(r.getMember(1), r.getMember(2), r.getMember(3), r.getMember(4));
         }
-        this.ctx.save();
-        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        this.ctx.fillStyle = color.as_string;
-        this.ctx.globalAlpha = a / 255;
-        this.ctx.fillRect(0, 0, this.width, this.height);
-        this.ctx.restore();
-    };
-
-    Canvas2D.prototype.draw = function(drawable, quad) {
-        console.log(arguments);
-    };
-
-    Canvas2D.prototype.setColor = function(r, g, b, a) {
-        var c;
-        if(typeof r == "number") {
-            c = new Love.Color(r, g, b, a);
-        } else {
-            c = new Love.Color(r.getMember(1), r.getMember(2), r.getMember(3), r.getMember(4));
-        }
-        this.ctx.fillStyle = c.as_string;
-        this.ctx.strokeStyle = c.as_string;
-        this.ctx.globalAlpha = c.a / 255;
+        this.backgroundColor = c;
     };
 
     Canvas2D.prototype.setDimensions = function(width, height) {
