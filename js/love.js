@@ -3,19 +3,19 @@ Love = (function() {
         elem = elem || null;
         Love.element = elem;
 
-        this.audio = new Love.Audio();
-        this.event = new Love.Event();
+        this.audio      = new Love.Audio();
+        this.event      = new Love.Event();
         this.filesystem = new Love.FileSystem();
-        this.font = new Love.Font();
-        this.graphics = new Love.Graphics(conf.width, conf.height);
-        this.joystick = new Love.Joystick();
-        this.keyboard = new Love.Keyboard();
-        this.math = new Love.Math();
-        this.mouse = new Love.Mouse();
-        this.sound = new Love.Sound();
-        this.system = new Love.System();
-        this.timer = new Love.Timer();
-        this.window = new Love.Window();
+        this.font       = new Love.Font();
+        this.graphics   = new Love.Graphics(conf.width, conf.height);
+        this.joystick   = new Love.Joystick();
+        this.keyboard   = new Love.Keyboard();
+        this.math       = new Love.Math();
+        this.mouse      = new Love.Mouse();
+        this.sound      = new Love.Sound();
+        this.system     = new Love.System();
+        this.timer      = new Love.Timer();
+        this.window     = new Love.Window();
     }
 
     var _defaultRunImpl = function() {
@@ -48,15 +48,18 @@ Love.Audio = (function() {
 
 Love.Color = (function() {
     function Color(r, g, b, a) {
-        if (typeof r == "string") {
-            //TODO write color parser
+        if (typeof r != "number") {
+            this.r = r.getMember(1) || 0;
+            this.g = r.getMember(2) || 0;
+            this.b = r.getMember(3) || 0;
+            this.a = r.getMember(4) || 255;
         } else {
             this.r = r || 0;
             this.g = g || 0;
             this.b = b || 0;
             this.a = a || 255;
-            this.as_string = "#" + (r << 16 | g << 8 | b).toString(16);
         }
+        this.as_string = "#" + (this.r << 16 | this.g << 8 | this.b).toString(16);
     }
 
     return Color;
@@ -96,6 +99,7 @@ Love.Graphics = (function() {
         else {
             this.canvas = new Love.Graphics.Canvas2D(width, height, Love.element);
         }
+        //Show the canvas that will be on screen
         this.canvas.elem.setAttribute('display', 'inheirit');
 
         this.mainCanvas = this.canvas;
@@ -136,6 +140,7 @@ Love.Graphics = (function() {
 Love.Graphics.Canvas2D = (function() {
     function Canvas2D(width, height, elem) {
         elem = elem || document.createElement("canvas");
+        //Hide canvas by default for off-screen rendering
         elem.setAttribute('display', 'none');
         this.setDimensions(width, height);
 
@@ -197,7 +202,7 @@ Love.Joystick = (function() {
 
     }
 
-    return Joystick
+    return Joystick;
 })();
 
 Love.Keyboard = (function() {
@@ -218,8 +223,6 @@ Love.Math = (function() {
 
 Love.Mouse = (function() {
     function Mouse() {
-
-    }function LMath() {
 
     }
 
@@ -247,8 +250,14 @@ Love.System = (function() {
 
 Love.Timer = (function() {
     function Timer() {
-
+        window.requestAnimationFrame = window.requestAnimationFrame || function(c) {
+            setTimeout(callback, 60/1000);
+        };
     }
+
+    Timer.prototype.nextFrame = function(callback) {
+        window.requestAnimationFrame(callback);
+    };
 
     return Timer;
 })();
