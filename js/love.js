@@ -52,7 +52,7 @@ Love = (function() {
                 self.timer.step();
                 self.update.call(null, self.timer.getDelta());
                 
-                //this.graphics.origin()
+                self.graphics.origin()
                 self.graphics.clear();
                 self.draw.call();
                 
@@ -136,6 +136,7 @@ Love.Graphics = (function() {
 
         this.mainCanvas = this.canvas;
         this.ctx = this.canvas.ctx;
+        this.__matrix = this.canvas.matrix;
 
         this.setColor(255, 255, 255);
         this.setBackgroundColor(0, 0, 0);
@@ -200,6 +201,63 @@ Love.Graphics = (function() {
                 self.ctx.strokeRect(x, y, w, h);
             }
         };
+        
+        self.__updateTransform = function() {
+            var matrix = self.__matrix;
+            self.ctx.setTransform(matrix.e(1, 1), matrix.e(2, 1), matrix.e(1, 2), matrix.e(2, 2), matrix.e(1, 3), matrix.e(2, 3)); 
+        };
+        
+        //Transformations
+        self.origin = function() {
+            self.__matrix = Matrix.I(3);
+            self.__updateTransform();
+        };
+        
+        self.pop = function() {
+            self.ctx.restore();
+        };
+        
+        self.push = function() {
+            self.ctx.save();
+        };
+        
+        self.scale = function(x, y) {
+            self.__matrix = self.__matrix.x($M([
+                [x, 0, 0],
+                [0, y, 0],
+                [0, 0, 1]
+            ]));
+            self.__updateTransform();
+        };
+        
+        self.translate = function(x, y) {
+            self.__matrix = self.__matrix.x($M([
+                [1, 0, x],
+                [0, 1, y],
+                [0, 0, 1]
+            ]));
+            self.__updateTransform();
+        };
+        
+        self.rotate = function(rad) {
+            var c = Math.cos(rad);
+            var s = Math.sin(rad);
+            self.__matrix = self.__matrix.x($M([
+                [c, -s, 0],
+                [s,  c, 0],
+                [0,  0, 1]
+            ]));
+            self.__updateTransform();
+        };
+        
+        self.shear = function(x, y) {
+            self.__matrix = self.__matrix.x($M([
+                [1, y, 0],
+                [x, 1, 0],
+                [0, 0, 1]
+            ]));  
+            self.__updateTransform();
+        };
 
         //State
         self.setColor = function(r, g, b, a) {
@@ -230,6 +288,12 @@ Love.Graphics.Canvas2D = (function() {
         //Hide canvas by default for off-screen rendering
         this.elem.setAttribute('display', 'none');
         this.setDimensions(width, height);
+        
+        this.matrix = $M([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1]
+        ]);
 
         this.ctx = elem.getContext("2d");
         this.setBackgroundColor(0, 0, 0, 255);
