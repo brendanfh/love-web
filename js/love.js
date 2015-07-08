@@ -55,7 +55,7 @@ Love = (function() {
                 //this.graphics.origin()
                 self.graphics.clear();
                 self.draw.call();
-                    
+                
                 self.timer.nextFrame(gameloop);
             };
         })(this);
