@@ -2,13 +2,15 @@
   "name": "love-web",
   "version": "0.0.1",
   "description": "A port of the LOVE game framework",
-  "main": "none",
   "dependencies": {
     "moonshine": "^0.2.0"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "native": "love lua/",
+    "build": "moonshine distil -d lua lua",
+    "serve": "node server.js"
   },
   "keywords": [
     "LOVE",

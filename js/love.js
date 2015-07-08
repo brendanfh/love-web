@@ -16,10 +16,12 @@ Love = (function() {
         this.system     = new Love.System();
         this.timer      = new Love.Timer();
         this.window     = new Love.Window();
+
+        this.run = (function(_this) { return function() { _defaultRunImpl(_this); } })(this);
     }
 
-    var _defaultRunImpl = function() {
-
+    var _defaultRunImpl = function(_this) {
+        _this.load.call();
     };
     
     Love.prototype.load = function() { };
@@ -32,7 +34,6 @@ Love = (function() {
     Love.prototype.mousemoved = function() { };
     Love.prototype.mousepressed = function() { };
     Love.prototype.resize = function() { };
-    Love.prototype.run = _defaultRunImpl;
     Love.prototype.visible = function() { };
     
     return Love;
@@ -111,6 +112,12 @@ Love.Graphics = (function() {
 
     //Drawing
     Graphics.prototype.arc = function(mode, x, y, rad, a1, a2, segments) {
+        var ctx = this.ctx;
+        ctx.save();
+        if(mode == "fill") {
+            
+        }
+
     };
 
     Graphics.prototype.circle = function(mode, x, y, rad, segments) {
@@ -181,9 +188,9 @@ Love.Graphics = (function() {
 
 Love.Graphics.Canvas2D = (function() {
     function Canvas2D(width, height, elem) {
-        elem = elem || document.createElement("canvas");
+        this.elem = elem || document.createElement("canvas");
         //Hide canvas by default for off-screen rendering
-        elem.setAttribute('display', 'none');
+        this.elem.setAttribute('display', 'none');
         this.setDimensions(width, height);
 
         this.ctx = elem.getContext("2d");
