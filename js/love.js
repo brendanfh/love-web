@@ -2,7 +2,11 @@ var wrap = function(t, f) {
     return function() {
         f.apply(t, arguments);
     }
-}
+};
+
+var unimplemented = function(name) {
+    console.warn("[", name, "] hasn't been implemented yet");  
+};
 
 Love = (function() {
     function Love(elem, conf) {
@@ -38,7 +42,25 @@ Love = (function() {
     Love.prototype.resize = function() { };
     Love.prototype.run = function() {
         this.load.call();
-        console.log("test");
+        this.timer.step(); // Step the timer so it doesn't count load time
+        
+        var dt = 0;
+        var gameloop = (function(self) {
+            return function() {
+                //TODO Step though events
+                
+                self.timer.step();
+                self.update.call(null, self.timer.getDelta());
+                
+                //this.graphics.origin()
+                self.graphics.clear();
+                self.draw.call();
+                    
+                self.timer.nextFrame(gameloop);
+            };
+        })(this);
+        
+        this.timer.nextFrame(gameloop);
     };
     Love.prototype.visible = function() { };
     
@@ -66,7 +88,8 @@ Love.Color = (function() {
             this.b = b || 0;
             this.a = a || 255;
         }
-        this.as_string = "#" + (this.r << 16 | this.g << 8 | this.b).toString(16);
+        //this.as_string = (this.r << 16 | this.g << 8 | this.b).toString(16);
+        this.as_string = "rgb(" + this.r + "," + this.g + "," + this.b + ")";
     }
 
     return Color;
@@ -97,6 +120,27 @@ Love.Font = (function() {
 })();
 
 Love.Graphics = (function() {
+    function Graphics(width, height) {
+        define(this);
+
+        if(Love.element == null) {
+            this.canvas = new Love.Graphics.Canvas2D(width, height);
+            document.body.appendChild(this.canvas.elem);
+            Love.element = this.canvas.elem;
+        }
+        else {
+            this.canvas = new Love.Graphics.Canvas2D(width, height, Love.element);
+        }
+        //Show the canvas that will be on screen
+        this.canvas.elem.setAttribute('display', 'inheirit');
+
+        this.mainCanvas = this.canvas;
+        this.ctx = this.canvas.ctx;
+
+        this.setColor(255, 255, 255);
+        this.setBackgroundColor(0, 0, 0);
+    }
+    
     function define(self) {
          self.arc = function(mode, x, y, rad, a1, a2, segments) {
             var ctx = self.ctx;
@@ -117,7 +161,7 @@ Love.Graphics = (function() {
                 if(typeof r == "number") {
                     c = new Love.Color(r, g, b, a);
                 } else {
-                    c = new Love.Color(r.getMember(1), r.getMember(2), r.getMember(3), r.getMember(4));
+                    c = new Love.Color(r);
                 }
             }
             if(c.a == 0) { return; }
@@ -125,7 +169,7 @@ Love.Graphics = (function() {
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.fillStyle = c.as_string;
             ctx.globalAlpha = c.a / 255;
-            ctx.fillRect(0, 0, this.width, this.height);
+            ctx.fillRect(0, 0, self.canvas.width, self.canvas.height);
             ctx.restore();
         };
 
@@ -150,6 +194,11 @@ Love.Graphics = (function() {
         };
         
         self.rectangle = function(mode, x, y, w, h) {
+            if(mode == "fill") {
+                self.ctx.fillRect(x, y, w, h);
+            } else {
+                self.ctx.strokeRect(x, y, w, h);
+            }
         };
 
         //State
@@ -158,7 +207,7 @@ Love.Graphics = (function() {
             if(typeof r == "number") {
                 c = new Love.Color(r, g, b, a);
             } else {
-                c = new Love.Color(r.getMember(1), r.getMember(2), r.getMember(3), r.getMember(4));
+                c = new Love.Color(r);
             }
             ctx.fillStyle = c.as_string;
             ctx.strokeStyle = c.as_string;
@@ -169,39 +218,30 @@ Love.Graphics = (function() {
             self.canvas.setBackgroundColor(r, g, b, a);
         };
     }
-
-    function Graphics(width, height) {
-        define(this);
-
-        if(Love.element == null) {
-            this.canvas = new Love.Graphics.Canvas2D(width, height);
-            document.body.appendChild(this.canvas.elem);
-            Love.element = this.canvas.elem;
-        }
-        else {
-            this.canvas = new Love.Graphics.Canvas2D(width, height, Love.element);
-        }
-        //Show the canvas that will be on screen
-        this.canvas.elem.setAttribute('display', 'inheirit');
-
-        this.mainCanvas = this.canvas;
-        this.ctx = this.canvas.ctx;
-
-        this.setColor(255, 255, 255);
-        this.setBackgroundColor(0, 0, 0);
-    }
     
     return Graphics;
 })();
 
 Love.Graphics.Canvas2D = (function() {
+    function Canvas2D(width, height, elem) {
+        define(this);
+
+        this.elem = elem || document.createElement("canvas");
+        //Hide canvas by default for off-screen rendering
+        this.elem.setAttribute('display', 'none');
+        this.setDimensions(width, height);
+
+        this.ctx = elem.getContext("2d");
+        this.setBackgroundColor(0, 0, 0, 255);
+    }
+    
     function define(self) {
         self.setBackgroundColor = function(r, g, b, a) {
             var c;
             if(typeof r == "number") {
                 c = new Love.Color(r, g, b, a);
             } else {
-                c = new Love.Color(r.getMember(1), r.getMember(2), r.getMember(3), r.getMember(4));
+                c = new Love.Color(r);
             }
             self.backgroundColor = c;
         };
@@ -221,19 +261,7 @@ Love.Graphics.Canvas2D = (function() {
             self.elem.setAttribute('height', height);
         };
     }
-
-    function Canvas2D(width, height, elem) {
-        define(this);
-
-        this.elem = elem || document.createElement("canvas");
-        //Hide canvas by default for off-screen rendering
-        this.elem.setAttribute('display', 'none');
-        this.setDimensions(width, height);
-
-        this.ctx = elem.getContext("2d");
-        this.setBackgroundColor(0, 0, 0, 0);
-    }
-
+    
     return Canvas2D;
 })();
 
@@ -290,14 +318,46 @@ Love.System = (function() {
 
 Love.Timer = (function() {
     function Timer() {
+        define(this);
+        
+        this.dtLimit = 0.25;
+        
+        this.dt = 0;
+        this.tp = Date.now();
+        
         window.requestAnimationFrame = window.requestAnimationFrame || function(c) {
             setTimeout(callback, 60/1000);
         };
     }
-
-    Timer.prototype.nextFrame = function(callback) {
-        window.requestAnimationFrame(callback);
-    };
+    
+    function define(self) {
+        self.getDelta = function() {
+            return self.dt;
+        };
+        
+        self.getTime = function() {
+            return self.tp;
+        };
+        
+        self.getFPS = function() {
+            if(self.dt == 0) { return 0; }
+            return 1 / self.dt;
+        };
+        
+        self.sleep = function() {
+            unimplemented("love.timer.sleep");  
+        };
+        
+        self.step = function() {
+            var delta = (Date.now() - self.tp) / 1000;
+            self.dt = Math.max(0, Math.min(self.dtLimit, delta));
+            self.tp += self.dt * 1000;
+        };
+        
+        self.nextFrame = function(callback) {
+            window.requestAnimationFrame(callback);
+        };
+    }
 
     return Timer;
 })();

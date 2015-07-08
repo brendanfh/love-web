@@ -13,6 +13,6 @@ function love.update(dt)
 end
 
 function love.draw()
-    love.graphics.setColor({ 0, 0, 255 })
-    love.graphics.rectangle("fill", x, y, 50, 50)
+    love.graphics.setColor({ 255, 0, 255 })
+    love.graphics.rectangle("fill", x, y, 300-x, 300-y)
 end
