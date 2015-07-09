@@ -132,7 +132,7 @@ Love.Graphics = (function() {
             this.canvas = new Love.Graphics.Canvas2D(width, height, Love.element);
         }
         //Show the canvas that will be on screen
-        this.canvas.elem.setAttribute('display', 'inheirit');
+        this.canvas.elem.style.display = "block";
 
         this.mainCanvas = this.canvas;
         this.ctx = this.canvas.ctx;
@@ -144,14 +144,32 @@ Love.Graphics = (function() {
     
     function define(self) {
          self.arc = function(mode, x, y, rad, a1, a2, segments) {
-            var ctx = self.ctx;
+            segments = segments || 10;
+            var ctx = self.ctx, interval, i, cx, cy;
             ctx.save();
+            ctx.beginPath();
             if(mode == "fill") {
-                
+                ctx.moveTo(x, y);
+            } else { 
+                ctx.moveTo(x + Math.cos(a1) * rad, y + Math.sin(a1) * rad);
+            } 
+            interval = (a2 - a1) / segments;
+            for(i = a1; i <= a2; i += interval) {
+                cx = Math.cos(i) * rad + x;
+                cy = Math.sin(i) * rad + y;
+                ctx.lineTo(cx, cy);
             }
+            if(mode == "fill") {
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                ctx.stroke();
+            }
+            ctx.restore();
         };
 
         self.circle = function(mode, x, y, rad, segments) {
+            self.arc(mode, x, y, rad, 0, Math.PI * 2, segments);
         };
 
         self.clear = function(r, g, b, a) {
@@ -258,6 +276,19 @@ Love.Graphics = (function() {
             ]));  
             self.__updateTransform();
         };
+        
+        //Window type things
+        self.getWidth = function() {
+            return self.canvas.width;
+        };
+        
+        self.getHeight = function() {
+            return self.canvas.height;
+        };
+        
+        self.getDimensions = function() {
+            return self.canvas.getDimensions();
+        }
 
         //State
         self.setColor = function(r, g, b, a) {
@@ -286,7 +317,7 @@ Love.Graphics.Canvas2D = (function() {
 
         this.elem = elem || document.createElement("canvas");
         //Hide canvas by default for off-screen rendering
-        this.elem.setAttribute('display', 'none');
+        this.elem.style.display = "none";
         this.setDimensions(width, height);
         
         this.matrix = $M([
@@ -308,6 +339,10 @@ Love.Graphics.Canvas2D = (function() {
                 c = new Love.Color(r);
             }
             self.backgroundColor = c;
+        };
+        
+        self.getDimensions = function() {
+            return [self.width, self.height];
         };
 
         self.setDimensions = function(width, height) {

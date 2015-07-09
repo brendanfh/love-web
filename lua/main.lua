@@ -8,12 +8,11 @@ function love.load()
 end
 
 function love.update(dt)
-    x = x + 1 * dt
-    y = y + 1 * dt
+    x = x + 0.01 * dt
+    y = y + 0.01 * dt
 end
 
 function love.draw()
     love.graphics.setColor({ 255, 0, 255 })
-    love.graphics.shear(x, y)
-    love.graphics.rectangle("fill", 0, 0, 300, 300)
+    love.graphics.circle("fill", 300, 300, 100, 5)
 end
