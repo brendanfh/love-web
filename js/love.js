@@ -12,12 +12,14 @@ Love = (function() {
     function Love(elem, conf) {
         elem = elem || null;
         Love.element = elem;
-
+        
+        
+        this.graphics   = new Love.Graphics(conf.width, conf.height);
+        this.window     = new Love.Window(this.graphics);
         this.audio      = new Love.Audio();
         this.event      = new Love.Event();
         this.filesystem = new Love.FileSystem();
         this.font       = new Love.Font();
-        this.graphics   = new Love.Graphics(conf.width, conf.height);
         this.joystick   = new Love.Joystick();
         this.keyboard   = new Love.Keyboard();
         this.math       = new Love.Math();
@@ -25,7 +27,6 @@ Love = (function() {
         this.sound      = new Love.Sound();
         this.system     = new Love.System();
         this.timer      = new Love.Timer();
-        this.window     = new Love.Window();
         
         this.run = wrap(this, this.run);
     }
@@ -164,7 +165,7 @@ Love.Graphics = (function() {
         //Show the canvas that will be on screen
         this.canvas.elem.style.display = "block";
 
-        this.mainCanvas = this.canvas;
+        this.__mainCanvas = this.canvas;
         this.ctx = this.canvas.ctx;
         this.__matrix = this.canvas.matrix;
 
@@ -344,7 +345,7 @@ Love.Graphics = (function() {
         
         self.getDimensions = function() {
             return self.canvas.getDimensions();
-        }
+        };
 
         //State
         self.setColor = function(r, g, b, a) {
@@ -518,8 +519,110 @@ Love.Timer = (function() {
 })();
 
 Love.Window = (function() {
-    function Window() {
-
+    function Window(graphics) {
+        define(this, graphics);
+        this.fullscreen = false;
+    }
+    
+    function define(self, graphics) {
+        self.getDesktopDimensions = function() {
+            return [window.screen.width, window.screen.height];
+        };
+        
+        self.getDimensions = function() {
+            return graphics.getDimensions();  
+        };
+        
+        self.getDisplayCount = function() {
+            return 1;
+        };
+        
+        self.getDisplayNames = function() {
+            return window.document.title;  
+        };
+        
+        self.getFullscreen = function() {
+            return self.fullscreen;
+        };
+        
+        self.getFullscreenModes = function() {
+            return [ new shine.Table({
+                width: window.screen.width,
+                height: window.screen.height                    
+            }) ];
+        };
+        
+        self.getHeight = function() {
+            return graphics.getHeight():  
+        };
+        
+        self.getIcon = function() {
+            unimplemented("love.window.getIcon");  
+        };
+        
+        self.getMode = function() {
+            return [self.getWidth(), self.getHeight(), null];  
+        };
+        
+        self.getPixelScale = function() {
+            return window.devicePixelRatio;  
+        };
+        
+        self.getPosition = function() {
+            return [0, 0, 1];  
+        };
+        
+        self.getTitle = function() {
+            return window.document.title;  
+        };
+        
+        self.getWidth = function() {
+            return graphics.getWidth();  
+        };
+        
+        self.hasFocus = function() {
+            return document.activeElement == Love.element;  
+        };
+        
+        self.hasMouseFocus = function() {
+            return document.activeElement == Love.element;  
+        };
+        
+        self.isCreated = function() {
+            return true;  
+        };
+        
+        self.isVisible = function() {
+            return true;  
+        };
+        
+        self.setFullscreen = function(fullscreen) {
+            self.fullscreen = fullscreen;
+            //TODO Implement fullscreen for the game... somehow
+        };
+        
+        self.setIcon = function() {
+            unimplemented("love.window.setIcon");  
+        };
+        
+        self.setMode = function(width, height, flags) {
+            graphics.__mainCanvas.setDimensions(width, height);
+            if(flags.getMember("fullscreen")) {
+                self.setFullscreen(flags.getMember("fullscreen"))
+            }
+        };
+        
+        self.setPosition = function(x, y) {
+            //Unneeded in JS  
+        };
+        
+        self.setTitle = function(title) {
+            window.document.title = title;  
+        };
+        
+        self.showMessageBox = function(title, message, type, attachtowindow) {
+            window.alert(title + "\n    " + message);  
+        };
     }
 
     return Window;
