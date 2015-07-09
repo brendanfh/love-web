@@ -13,7 +13,6 @@ Love = (function() {
         elem = elem || null;
         Love.element = elem;
         
-        
         this.graphics   = new Love.Graphics(conf.width, conf.height);
         this.window     = new Love.Window(this.graphics);
         this.audio      = new Love.Audio();
