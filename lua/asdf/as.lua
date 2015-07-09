@@ -1,3 +1,3 @@
 function asdf()
-    print "WORKED"
+    love.window.setTitle("A game")
 end

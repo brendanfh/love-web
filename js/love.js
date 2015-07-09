@@ -552,7 +552,7 @@ Love.Window = (function() {
         };
         
         self.getHeight = function() {
-            return graphics.getHeight():  
+            return graphics.getHeight();  
         };
         
         self.getIcon = function() {
