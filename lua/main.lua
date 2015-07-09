@@ -3,6 +3,8 @@ require "asdf/as"
 function love.load()
     x = 0
     y = 0
+    t = 0
+    d = false
     love.graphics.setBackgroundColor(255, 0, 0)
     print "test!!"
     
@@ -12,6 +14,11 @@ end
 function love.update(dt)
     x = x + 0.01 * dt
     y = y + 0.01 * dt
+    t = t + dt
+    if t > 3 and not d then
+        d = true
+        love.window.setFullscreen(true)
+    end
 end
 
 function love.draw()

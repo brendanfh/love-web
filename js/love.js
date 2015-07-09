@@ -14,9 +14,9 @@ Love = (function() {
         Love.element = elem;
         
         this.graphics   = new Love.Graphics(conf.width, conf.height);
-        this.window     = new Love.Window(this.graphics);
-        this.audio      = new Love.Audio();
         this.event      = new Love.Event();
+        this.window     = new Love.Window(this.graphics, this.event);
+        this.audio      = new Love.Audio();
         this.filesystem = new Love.FileSystem();
         this.font       = new Love.Font();
         this.joystick   = new Love.Joystick();
@@ -518,12 +518,31 @@ Love.Timer = (function() {
 })();
 
 Love.Window = (function() {
-    function Window(graphics) {
+    function Window(graphics, event) {
         define(this, graphics);
         this.fullscreen = false;
+        
+        window.onbeforeunload = function() {
+            event.quit();
+        };
+        
+          
     }
     
     function define(self, graphics) {
+        var ts = 0;
+        document.addEventListener("webkitfullscreenchange", function(e) {
+            //If the timestamp of the event is within 100ms of the time we went fullscreen,
+            //we can assume we are going fullscreen
+            if(e.timeStamp - ts > 100) {
+                self.setFullscreen(false);
+            }
+        });
+        
+        self.fromPixels = function() {
+            unimplemented("love.window.fromPixels");  
+        };
+        
         self.getDesktopDimensions = function() {
             return [window.screen.width, window.screen.height];
         };
@@ -598,6 +617,36 @@ Love.Window = (function() {
         self.setFullscreen = function(fullscreen) {
             self.fullscreen = fullscreen;
             //TODO Implement fullscreen for the game... somehow
+            if(self.fullscreen) {
+                Love.element.requestFullscreen = Love.element.requestFullscreen
+                                              || Love.element.mozRequestFullscreen
+                                              || Love.element.webkitRequestFullscreen
+                                              || Love.element.msRequestFullscreen;
+                document.getElementById("fs-text").setAttribute("style", "display: block;");
+                document.getElementById("fs-btn-yes").addEventListener("click", function() {
+                    document.getElementById("fs-btn-yes").removeEventListener("click");
+                    document.getElementById("fs-btn-no").removeEventListener("click");
+                    document.getElementById("fs-text").setAttribute("style", "display: none;");
+                    ts = Date.now();
+                    Love.element.requestFullscreen();
+                    var dims = self.getDesktopDimensions();
+                    Love.element.setAttribute("style", "width: " + dims[0] + "px; height: " + dims[1] + "px;");
+                });
+                
+                document.getElementById("fs-btn-no").addEventListener("click", function() {
+                    document.getElementById("fs-btn-yes").removeEventListener("click");
+                    document.getElementById("fs-btn-no").removeEventListener("click");
+                    document.getElementById("fs-text").setAttribute("style", "display: none;");
+                });
+            } else {
+                document.exitFullscreen = document.exitFullscreen
+                                       || document.mozCancelFullscreen
+                                       || document.webkitExitFullscreen
+                                       || document.msExitFullscreen;
+                document.exitFullscreen();
+                var dims = self.getDimensions();
+                Love.element.setAttribute("style", "width: " + dims[0] + "px; height: " + dims[1] + "px;");
+            }
         };
         
         self.setIcon = function() {
@@ -621,6 +670,10 @@ Love.Window = (function() {
         
         self.showMessageBox = function(title, message, type, attachtowindow) {
             window.alert(title + "\n    " + message);  
+        };
+        
+        self.toPixels = function() {
+            unimplemented("love.window.toPixels");  
         };
     }
 
