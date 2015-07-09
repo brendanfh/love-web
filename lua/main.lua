@@ -5,6 +5,8 @@ function love.load()
     y = 0
     love.graphics.setBackgroundColor(255, 0, 0)
     print "test!!"
+    
+    asdf()
 end
 
 function love.update(dt)

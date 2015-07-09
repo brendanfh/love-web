@@ -260,7 +260,7 @@ Love.Graphics = (function() {
             }
         };
         
-        self.present =  function() { /*Uneeded in JS*/ };
+        self.present = function() { /*Uneeded in JS*/ };
         
         self.print = function(text, x, y, r, sx, sy, ox, oy, kx, ky) {
         };
@@ -344,7 +344,7 @@ Love.Graphics = (function() {
         
         self.getDimensions = function() {
             return self.canvas.getDimensions();
-        }
+        };
 
         //State
         self.setColor = function(r, g, b, a) {
