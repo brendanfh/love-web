@@ -44,10 +44,14 @@ Love = (function() {
         this.load.call();
         this.timer.step(); // Step the timer so it doesn't count load time
         
-        var dt = 0;
+        var i = 0, e;
         var gameloop = (function(self) {
             return function() {
-                //TODO Step though events
+                for(i = 0; i < self.event.queue.length; i++) {
+                    e = self.event.queue[i];
+                    self[e[0]].apply(null, e.slice(1, e.length));
+                }
+                self.event.clear();
                 
                 self.timer.step();
                 self.update.call(null, self.timer.getDelta());
@@ -97,7 +101,33 @@ Love.Color = (function() {
 
 Love.Event = (function() {
     function Event() {
+        define(this);
+        this.queue = [];
+    }
 
+    function define(self) {
+        self.clear = function() {
+            self.queue = [];
+        };
+
+        self.push = function(eType, a1, a2, a3, a4) {
+            var event = [eType, a1, a2, a3, a4];
+            self.queue.push(event);
+        };
+
+        self.quit = function() {
+            self.push("quit");
+        };
+
+        self.pump = function() { /* Uneeded In JS */ };
+
+        self.poll = function() {
+            unimplemented("love.event.poll");
+        };
+
+        self.wait = function() {
+            unimplemented("love.event.wait");
+        }
     }
 
     return Event;
@@ -187,71 +217,71 @@ Love.Graphics = (function() {
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.fillStyle = c.as_string;
             ctx.globalAlpha = c.a / 255;
-                ctx.fillRect(0, 0, self.canvas.width, self.canvas.height);
-                ctx.restore();
-            };
-    
-            self.draw = function() {
-            };
-            
-            self.line = function(x1, y1, x2, y2) {
-                var ctx = self.ctx;
-                ctx.beginPath();
-                if(typeof x1 == "number") {
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
-                    ctx.stroke();
-                } else {
-                    ctx.moveTo(x1.getMember(1), x1.getMember(2));
-                    ctx.lineTo(x1.getMember(3), x1.getMember(4));
-                    ctx.stroke();
-                }
-                ctx.closePath();
-            };
-            
-            self.point = function(x, y) {
-                self.ctx.fillRect(x, y, 1, 1);
-            };
-            
-            self.polygon = function(mode, verts) {
-                var ctx = self.ctx, i, x, y;
-                ctx.beginPath();
-                ctx.moveTo(verts.getMember(1), verts.getMember(2));
-                for(i = 3; i <= verts.__shine.numValues.length; i += 2) {
-                    x = verts.getMember(i);
-                    y = verts.getMember(i + 1);
-                    ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                if(mode == "fill") {
-                    ctx.fill();
-                } else {
-                    ctx.stroke();
-                }
-            };
-            
-            self.present =  function() { /*Uneeded in JS*/ };
-            
-            self.print = function(text, x, y, r, sx, sy, ox, oy, kx, ky) {
-            };
-            
-            self.printf = function(text, x, y, limit, align, r, sx, sy, ox, oy, kx, ky) {
-            };
-            
-            self.rectangle = function(mode, x, y, w, h) {
-                if(mode == "fill") {
-                    self.ctx.fillRect(x, y, w, h);
-                } else {
+            ctx.fillRect(0, 0, self.canvas.width, self.canvas.height);
+            ctx.restore();
+        };
+
+        self.draw = function() {
+        };
+        
+        self.line = function(x1, y1, x2, y2) {
+            var ctx = self.ctx;
+            ctx.beginPath();
+            if(typeof x1 == "number") {
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            } else {
+                ctx.moveTo(x1.getMember(1), x1.getMember(2));
+                ctx.lineTo(x1.getMember(3), x1.getMember(4));
+                ctx.stroke();
+            }
+            ctx.closePath();
+        };
+        
+        self.point = function(x, y) {
+            self.ctx.fillRect(x, y, 1, 1);
+        };
+        
+        self.polygon = function(mode, verts) {
+            var ctx = self.ctx, i, x, y;
+            ctx.beginPath();
+            ctx.moveTo(verts.getMember(1), verts.getMember(2));
+            for(i = 3; i <= verts.__shine.numValues.length; i += 2) {
+                x = verts.getMember(i);
+                y = verts.getMember(i + 1);
+                ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            if(mode == "fill") {
+                ctx.fill();
+            } else {
+                ctx.stroke();
+            }
+        };
+        
+        self.present =  function() { /*Uneeded in JS*/ };
+        
+        self.print = function(text, x, y, r, sx, sy, ox, oy, kx, ky) {
+        };
+        
+        self.printf = function(text, x, y, limit, align, r, sx, sy, ox, oy, kx, ky) {
+        };
+        
+        self.rectangle = function(mode, x, y, w, h) {
+            if(mode == "fill") {
+                self.ctx.fillRect(x, y, w, h);
+            } else {
                 self.ctx.strokeRect(x, y, w, h);
             }
         };
         
+        //Transformations
         self.__updateTransform = function() {
             var matrix = self.__matrix;
             self.ctx.setTransform(matrix.e(1, 1), matrix.e(2, 1), matrix.e(1, 2), matrix.e(2, 2), matrix.e(1, 3), matrix.e(2, 3)); 
         };
         
-        //Transformations
         self.origin = function() {
             self.__matrix = Matrix.I(3);
             self.__updateTransform();
