@@ -531,13 +531,17 @@ Love.Window = (function() {
     
     function define(self, graphics) {
         var ts = 0;
-        document.addEventListener("webkitfullscreenchange", function(e) {
+        var handler = function(e) {
             //If the timestamp of the event is within 100ms of the time we went fullscreen,
             //we can assume we are going fullscreen
             if(e.timeStamp - ts > 100) {
                 self.setFullscreen(false);
             }
-        });
+        };
+        document.addEventListener("webkitfullscreenchange", handler);
+        document.addEventListener("mozfullscreenchange", handler);
+        document.addEventListener("fullscreenchange", handler);
+        document.addEventListener("MSFullscreenchange", handler);
         
         self.fromPixels = function() {
             unimplemented("love.window.fromPixels");  
