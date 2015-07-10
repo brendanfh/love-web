@@ -17,7 +17,7 @@ function love.update(dt)
     t = t + dt
     if t > 3 and not d then
         d = true
-        love.window.setFullscreen(true)
+        love.window.setMode(800, 600, { fullscreen = true })
     end
 end
 
