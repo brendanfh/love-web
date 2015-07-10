@@ -281,11 +281,11 @@ Love.Font = (function() {
     
     function define(self) {
         self.newGlyphData = function() {
-            unimplemented("love.font.newGlyphData");  
+            neverimplemented("love.font.newGlyphData");  
         };
         
         self.newRasterizer = function() {
-            unimplemented("love.font.newRasterizer");  
+            neverimplemented("love.font.newRasterizer");  
         };
     }
 
@@ -600,7 +600,17 @@ Love.Mouse = (function() {
 
 Love.Sound = (function() {
     function Sound() {
-
+        define(this);
+    }
+    
+    function define(self) {
+        self.newDecoder = function() {
+            neverimplemented("love.sound.newDecoder");  
+        };
+        
+        self.newSoundData = function() {
+            neverimplemented("love.sound.newSoundData");  
+        };
     }
 
     return Sound;
@@ -608,7 +618,53 @@ Love.Sound = (function() {
 
 Love.System = (function() {
     function System() {
-
+        define(this);
+        
+        navigator.battery = navigator.battery || navigator.webkitBattery || navigator.mozBattery || navigator.msBattery;
+        
+        this.clipboardText = "";
+    }
+    
+    function define(self) {
+        self.getClipboardText = function() {
+            return this.clipboardText;
+        };
+        
+        self.setClipboardText = function(text) {
+            this.clipboardText = text;  
+        };
+        
+        self.getOS = function() {
+            return "Web " + navigator.appVersion;
+        };
+        
+        self.getPowerInfo = function() {
+            if(navigator.battery) {
+                var state = "",
+                    percent = Math.floor(navigator.battery.level * 100),
+                    discharge = navigator.battery.dischargTime;
+                if(navigator.battery.charging) {
+                    if(percent >= 99) {
+                        state = "charged";
+                    } else {
+                        state = "charging";
+                    }
+                } else {
+                    state = "battery";
+                }
+                return [state, percent, discharge];
+            } else {
+                return ["nobattery", null, null];
+            }
+        };
+        
+        self.getProcessorCount = function() {
+            return navigator.hardwareConcurrency || 1;  
+        };
+        
+        self.openURL = function(url) {
+            window.open(url)  
+        };
     }
 
     return System;
