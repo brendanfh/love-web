@@ -4,6 +4,7 @@ function LOVEWEB(conf) {
         width: 800,
         height: 600,
     };
+    conf.modules = conf.modules || {};
 
     new shine.FileManager().load("./lua/conf.lua.json", function(err, file) {
         if(file) {

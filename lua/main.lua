@@ -10,9 +10,10 @@ function love.load()
 end
 
 function love.update(dt)
-    x = x + 0.01 * dt
-    y = y + 0.01 * dt
-    t = t + dt
+    if love.keyboard.isDown "w" then y = y - 50 * dt end
+    if love.keyboard.isDown "s" then y = y + 50 * dt end
+    if love.keyboard.isDown "a" then x = x - 50 * dt end
+    if love.keyboard.isDown "d" then x = x + 50 * dt end
 end
 
 function love.draw()
@@ -21,7 +22,7 @@ function love.draw()
     love.graphics.setColor(0, 0, 0)
     love.graphics.line(0, 0, 300, 300)
     
-    love.graphics.translate(400, 100)
+    love.graphics.translate(x, y)
     love.graphics.rotate(t)
     love.graphics.polygon("fill", { 0, -100, 100, 0, 0, 100, -100, 0 })
 end
