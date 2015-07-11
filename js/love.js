@@ -381,14 +381,27 @@ Love.Graphics = (function() {
                 [sx * s + kx * sy * c, ky * sx * s + sy * c, y - oy],
                 [0,                    0,                    1     ]
             ]);
+           
             ctx.save();
             self.__updateTransform(matrix);
             ctx.drawImage(drawable.elem, 0, 0);
             ctx.restore();
         };
         
-        self.__drawWithQuad = function() {
-            
+        self.__drawWithQuad = function(drawable, quad, x, y, r, sx, sy, ox, oy, kx, ky) {
+            var ctx = self.ctx, w = drawable.getWidth(), h = drawable.getHeight();
+            var c = r == 0 ? 1 : Math.cos(r);
+            var s = r == 0 ? 0 : Math.sin(r);
+            var matrix = $M([
+                [sx * c - kx * sy * s, ky * sx * c - sy * s, x - ox],
+                [sx * s + kx * sy * c, ky * sx * s + sy * c, y - oy],
+                [0,                    0,                    1     ]
+            ]);
+           
+            ctx.save();
+            self.__updateTransform(matrix);
+            ctx.drawImage(drawable.elem, quad.x, quad.y, quad.w, quad.h, 0, 0, w, h);
+            ctx.restore();
         };
         
         self.line = function(x1, y1, x2, y2) {
@@ -510,6 +523,10 @@ Love.Graphics = (function() {
             return new Love.Graphics.Image(path);  
         };
         
+        self.newQuad = function(x, y, w, h, sw, sh) {
+            return new Love.Graphics.Quad(x, y, w, h);  
+        };
+        
         //Window type things
         self.getWidth = function() {
             return self.canvas.width;
@@ -621,6 +638,28 @@ Love.Graphics.Image = (function() {
     }
     
     return LImage;
+})();
+
+Love.Graphics.Quad = (function() {
+    function Quad(x, y, w, h) {
+        this.x = x
+        this.y = y
+        this.w = w
+        this.h = h
+    }
+    
+    Quad.prototype.getViewport = function(self) {
+        return [self.x, self.y, self.w, self.h];
+    };
+    
+    Quad.prototype.setViewport = function(self, x, y, w, h) {
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+    };
+    
+    return Quad;
 })();
 
 Love.Graphics.Canvas2D = (function() {
