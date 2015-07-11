@@ -297,12 +297,12 @@ Love.Graphics = (function() {
         define(this);
 
         if(Love.element == null) {
-            this.canvas = new Love.Graphics.Canvas2D(width, height);
+            this.canvas = new Love.Graphics.Canvas2D(width, height, null, this);
             document.body.appendChild(this.canvas.elem);
             Love.element = this.canvas.elem;
         }
         else {
-            this.canvas = new Love.Graphics.Canvas2D(width, height, Love.element);
+            this.canvas = new Love.Graphics.Canvas2D(width, height, Love.element, this);
         }
         //Show the canvas that will be on screen
         this.canvas.elem.style.display = "block";
@@ -364,7 +364,31 @@ Love.Graphics = (function() {
             ctx.restore();
         };
 
-        self.draw = function() {
+        self.draw = function(drawable, quad, x, y, r, sx, sy, ox, oy, kx, ky) {
+            if(typeof quad == "number") {
+                self.__drawWhole(drawable, quad || 0, x || 0, y || 0, r || 1, sx || 1, sy || 0, ox || 0, oy || 0, kx || 0);
+            } else {
+                self.__drawWithQuad(drawable, quad, x || 0, y || 0, r || 0, sx || 1, sy || 1, ox || 0, oy || 0, kx || 0, ky || 0);
+            }
+        };
+        
+        self.__drawWhole = function(drawable, x, y, r, sx, sy, ox, oy, kx, ky) {
+            var ctx = self.ctx;
+            var c = r == 0 ? 1 : Math.cos(r);
+            var s = r == 0 ? 0 : Math.sin(r);
+            var matrix = $M([
+                [sx * c + sx * kx * s, sy * ky * c - sy * s, x + ox],
+                [sx * kx * c + sx * s, sy * c + sy * ky * s, y + oy],
+                [0,                    0,                    1     ]
+            ]);
+            ctx.save();
+            self.__updateTransform(matrix);
+            ctx.drawImage(drawable.elem, 0, 0);
+            ctx.restore();
+        };
+        
+        self.__drawWithQuad = function() {
+            
         };
         
         self.line = function(x1, y1, x2, y2) {
@@ -420,8 +444,8 @@ Love.Graphics = (function() {
         };
         
         //Transformations
-        self.__updateTransform = function() {
-            var matrix = self.__matrix;
+        self.__updateTransform = function(m) {
+            var matrix = m || self.__matrix;
             self.ctx.setTransform(matrix.e(1, 1), matrix.e(2, 1), matrix.e(1, 2), matrix.e(2, 2), matrix.e(1, 3), matrix.e(2, 3)); 
         };
         
@@ -476,6 +500,16 @@ Love.Graphics = (function() {
             self.__updateTransform();
         };
         
+        //Constructors
+        self.newCanvas = function(width, height) {
+            var canvas = new Love.Graphics.Canvas2D(width, height, this);
+            return canvas;
+        };
+        
+        self.newImage = function(path) {
+            return new Love.Graphics.Image(path);  
+        };
+        
         //Window type things
         self.getWidth = function() {
             return self.canvas.width;
@@ -490,6 +524,16 @@ Love.Graphics = (function() {
         };
 
         //State
+        self.getCanvas = function() {
+            return self.canvas;  
+        };
+        
+        self.setCanvas = function(canvas) {
+            self.canvas = canvas || self.__mainCanvas;
+            self.ctx = self.canvas.ctx;
+            self.__matrix = self.canvas.matrix;
+        };
+        
         self.setColor = function(r, g, b, a) {
             var c, ctx = self.ctx;
             if(typeof r == "number") {
@@ -510,9 +554,78 @@ Love.Graphics = (function() {
     return Graphics;
 })();
 
-Love.Graphics.Canvas2D = (function() {
-    function Canvas2D(width, height, elem) {
+Love.Graphics.Image = (function() {
+    function LImage(path) {
         define(this);
+        
+        if(typeof path == "string") {
+            this.elem = document.querySelector("[src='"+path+"']");
+            if(this.elem == null) {
+                this.elem = document.createElement("img");
+                this.elem.src = "lua/" + path;
+            }
+        } else {
+            this.elem = document.createElement("img");
+            this.elem.src = "data:image/" + path.getExtension(path) + ";base64," + path.getString(path);
+        }
+    }
+    
+    function define(self) {
+        self.getData = function() {
+            return new shine.Table();
+        };
+        
+        self.getDimensions = function() {
+            return [self.elem.width, self.elem.height];  
+        };
+        
+        self.getFilter = function() {
+            neverimplemented("Image:getFilter");  
+        };
+        
+        self.getHeight = function() {
+            return self.elem.height;  
+        };
+        
+        self.getMipmapFilter = function() {
+            neverimplemented("Image:getMipmapFilter");  
+        };
+        
+        self.getWidth = function() {
+            return self.elem.width;  
+        };
+        
+        self.getWrap = function() {
+            return "none";  
+        };
+        
+        self.isCompressed = function() {
+            return false;  
+        };
+        
+        self.refresh = function() {
+            unimplemented("Image:refresh");  
+        };
+        
+        self.setFilter = function() {
+            neverimplemented("Image:setFilter");  
+        };
+        
+        self.setMipmapFilter = function() {
+            neverimplemented("Image:setMipmapFilter");  
+        };
+        
+        self.setWrap = function() {
+            neverimplemented("Image:setWrap");
+        };
+    }
+    
+    return LImage;
+})();
+
+Love.Graphics.Canvas2D = (function() {
+    function Canvas2D(width, height, elem, graphics) {
+        define(this, graphics);
 
         this.elem = elem || document.createElement("canvas");
         //Hide canvas by default for off-screen rendering
@@ -529,19 +642,85 @@ Love.Graphics.Canvas2D = (function() {
         this.setBackgroundColor(0, 0, 0, 255);
     }
     
-    function define(self) {
-        self.setBackgroundColor = function(r, g, b, a) {
-            var c;
-            if(typeof r == "number") {
-                c = new Love.Color(r, g, b, a);
+    function define(self, graphics) {
+        self.clear = function(_, r, g, b, a) {
+            var c, ctx = self.ctx;
+            if(r == null) {
+                c = self.canvas.backgroundColor;
             } else {
-                c = new Love.Color(r);
+                if(typeof r == "number") {
+                    c = new Love.Color(r, g, b, a);
+                } else {
+                    c = new Love.Color(r);
+                }
             }
-            self.backgroundColor = c;
+            if(c.a == 0) { return; }
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = c.as_string;
+            ctx.globalAlpha = c.a / 255;
+            ctx.fillRect(0, 0, self.canvas.width, self.canvas.height);
+            ctx.restore();
         };
         
         self.getDimensions = function() {
             return [self.width, self.height];
+        };
+        
+        self.getFilter = function() {
+            if(self.ctx.imageSmoothingEnabled) {
+                return "linear";
+            } else {
+                return "nearest";
+            }
+        };
+        
+        self.getFormat = function() {
+            return "normal";  
+        };
+        
+        self.getHeight = function() {
+            return self.height;
+        };
+        
+        self.getImageData = function() {
+            var data = self.ctx.getImageData(0, 0, self.width, self.height);
+            return new ImageData(data);
+        };
+        
+        self.getMSAA = function() {
+            return 0;  
+        };
+        
+        self.getPixel = function(_, x, y) {
+            var data = self.ctx.getImageData(x, y, 1, 1);
+            return [data[0], data[1], data[2], data[3]];
+        };
+        
+        self.getWidth = function() {
+            return self.width;  
+        };
+        
+        self.getWrap = function() {
+            return "none";
+        };
+        
+        self.renderTo = function(_, func) {
+            graphics.setCanvas(self);
+            func.call();
+            graphics.setCanvas();
+        };
+        
+        self.setFilter = function(_, filter) {
+            var smoothing = filter == "linear", ctx = self.ctx;
+            ctx.imageSmoothingEnabled = smoothing;
+            ctx.mozImageSmoothingEnabled = smoothing;
+            ctx.webkitImageSmoothingEnabled = smoothing;
+            ctx.msImageSmoothingEnabled = smoothing;
+        };
+        
+        self.setWrap = function() {
+            unimplemented("Canvas:setWrap");  
         };
 
         self.setDimensions = function(width, height) {
@@ -557,6 +736,16 @@ Love.Graphics.Canvas2D = (function() {
         self.setHeight = function(height) {
             self.height = height;
             self.elem.setAttribute('height', height);
+        };
+        
+        self.setBackgroundColor = function(r, g, b, a) {
+            var c;
+            if(typeof r == "number") {
+                c = new Love.Color(r, g, b, a);
+            } else {
+                c = new Love.Color(r);
+            }
+            self.backgroundColor = c;
         };
     }
     
@@ -687,7 +876,11 @@ Love.Keyboard = (function() {
 
 Love.Math = (function() {
     function LMath() {
-
+        define(this);
+    }
+    
+    function define(self) {
+        
     }
 
     return LMath;
@@ -831,11 +1024,11 @@ Love.Window = (function() {
             event.quit();
         };
         
-        Love.element.onblur = function() {
+        window.onblur = function() {
             event.push("visible", false);
         };
         
-        Love.element.onfocus = function() {
+        window.onfocus = function() {
             event.push("visible", true);  
         };
     }

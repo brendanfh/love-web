@@ -5,8 +5,14 @@
     <script src="lib/sylvester.js"></script>
     <script src="js/love.js"></script>
     <script src="js/starter.js"></script>
+    <style>
+        img {
+            display: none;
+        }
+    </style>
 </head>
 <body>
+    <img src="http://dummyimage.com/100x50/000/fff" />
     <center>
         <div id="fs-text" style="display: none">
             This game wants to be fullscreened. Do you want to allow this?<br>
@@ -15,7 +21,6 @@
         </div>
         <canvas id="game">You're browser doesn't support the &lt;canvas&gt; element</canvas>
     </center>
-    <input type="button" id="fs-btn" style="display: none;"></input> 
     <script>
         window.onload = function() {
             LOVEWEB({
