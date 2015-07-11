@@ -26,5 +26,5 @@ function love.draw()
     
     love.graphics.polygon("fill", { 0, -100, 100, 0, 0, 100, -100, 0 })
         
-    love.graphics.draw(img, x, y, 0, 1, 1, 0, 0, 0.5, 0.5)
+    love.graphics.draw(img, x, y, t, 2, 2, 0, 0, 0.5, 0.25)
 end
