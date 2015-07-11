@@ -377,8 +377,8 @@ Love.Graphics = (function() {
             var c = r == 0 ? 1 : Math.cos(r);
             var s = r == 0 ? 0 : Math.sin(r);
             var matrix = $M([
-                [sx * c + sx * kx * s, sy * ky * c - sy * s, x - ox],
-                [sx * kx * c + sx * s, sy * c + sy * ky * s, y - oy],
+                [sx * c - kx * sy * s, ky * sx * c - sy * s, x - ox],
+                [sx * s + kx * sy * c, ky * sx * s + sy * c, y - oy],
                 [0,                    0,                    1     ]
             ]);
             ctx.save();
