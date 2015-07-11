@@ -527,6 +527,14 @@ Love.Graphics = (function() {
             return new Love.Graphics.Quad(x, y, w, h);  
         };
         
+        self.newFont = function(name, size) {
+            return new Love.Graphics.Font(name, size);  
+        };
+        
+        self.newImageFont = function(name, glyphs) {
+            return new Love.Graphics.ImageFont(name, glyphs);  
+        };
+        
         //Window type things
         self.getWidth = function() {
             return self.canvas.width;
@@ -549,6 +557,7 @@ Love.Graphics = (function() {
             self.canvas = canvas || self.__mainCanvas;
             self.ctx = self.canvas.ctx;
             self.__matrix = self.canvas.matrix;
+            self.__updateTransform();
         };
         
         self.setColor = function(r, g, b, a) {
@@ -571,19 +580,156 @@ Love.Graphics = (function() {
     return Graphics;
 })();
 
-Love.Graphics.Image = (function() {
-    function LImage(path) {
+Love.Graphics.Font = (function() {
+    function Font(name, size) {
         define(this);
+        
+        this.name = name;
+        this.size = size;
+        
+        this.code = size + "px " + name;
+    }
+    
+    function define(self) {
+        //Most of these functions will not be properly implemented
+        self.getAscent = function() {
+            return 0;
+        };
+        
+        self.getBaseline = function() {
+            return 0;
+        };
+        
+        self.getDescent = function() {
+            return 0;  
+        };
+        
+        self.getFilter = function() {
+            return ["nearest", "nearest", 1];
+        };
+        
+        self.getHeight = function() {
+            return self.size;  
+        };
+        
+        self.getLineHeight = function() {
+            return self.size;  
+        };
+        
+        self.getWidth = function(_, line) {
+            unimplemented("Font:getWidth");  
+        };
+        
+        self.getWrap = function(_, lines, width) {
+            unimplemented("Font:getWrap");
+        };
+        
+        self.hasGlyphs = function() {
+            return false;  
+        };
+        
+        self.setFilter = function() {
+            unimplemented("Font:setFilter");
+        };
+        
+        self.setLineHeight = function() {
+            unimplemented("Font:setLineHeight");  
+        };
+    }
+    
+    return Font;
+})();
+
+Love.Graphics.ImageFont = (function() {
+    function ImageFont(name, glyphs) {
+        this.name = name;
+        this.glyphs = glyphs;
+        this.chars = {};
+        
+        define(this);
+    }
+    
+    function define(self) {
+        new Love.Graphics.Image(self.name, function(img) {
+            self.__img = img;
+            
+            var charwidth = img.getWidth() / self.glyphs.length,
+                i;
+            for(i = 0; i < self.glyphs.length; i++) {
+                self.chars[self.glyphs.charAt(i)] = new Love.Graphics.Quad(i * charwidth, 0, charwidth, img.getHeight());
+            }
+        });
+        
+        //Most of these functions will not be properly implemented
+        self.getAscent = function() {
+            return 0;
+        };
+        
+        self.getBaseline = function() {
+            return 0;
+        };
+        
+        self.getDescent = function() {
+            return 0;  
+        };
+        
+        self.getFilter = function() {
+            return ["nearest", "nearest", 1];
+        };
+        
+        self.getHeight = function() {
+            return self.__img.getHeight();
+        };
+        
+        self.getLineHeight = function() {
+            return self.__img.getHeight();
+        };
+        
+        self.getWidth = function(_, line) {
+            return self.__img.getWidth() / self.glyphs.length;
+        };
+        
+        self.getWrap = function(_, lines, width) {
+            unimplemented("ImageFont:getWrap");
+        };
+        
+        self.hasGlyphs = function() {
+            return false;
+        };
+        
+        self.setFilter = function() {
+            unimplemented("ImageFont:setFilter");
+        };
+        
+        self.setLineHeight = function() {
+            unimplemented("ImageFont:setLineHeight");  
+        };
+    }
+    
+    return ImageFont;
+})();
+
+Love.Graphics.Image = (function() {
+    function LImage(path, onload) {
+        define(this);
+        
+        var cFunc = wrap(this, function() {
+            if(onload) onload.call(null, this);
+        });
         
         if(typeof path == "string") {
             this.elem = document.querySelector("[src='"+path+"']");
             if(this.elem == null) {
                 this.elem = document.createElement("img");
                 this.elem.src = "lua/" + path;
+                this.elem.onload = cFunc;
+            } else {
+                cFunc.call(null, this);
             }
         } else {
             this.elem = document.createElement("img");
             this.elem.src = "data:image/" + path.getExtension(path) + ";base64," + path.getString(path);
+            this.elem.onload = cFunc;
         }
     }
     
@@ -642,10 +788,10 @@ Love.Graphics.Image = (function() {
 
 Love.Graphics.Quad = (function() {
     function Quad(x, y, w, h) {
-        this.x = x
-        this.y = y
-        this.w = w
-        this.h = h
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
     }
     
     Quad.prototype.getViewport = function(self) {
@@ -653,10 +799,10 @@ Love.Graphics.Quad = (function() {
     };
     
     Quad.prototype.setViewport = function(self, x, y, w, h) {
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
+        self.x = x;
+        self.y = y;
+        self.w = w;
+        self.h = h;
     };
     
     return Quad;
