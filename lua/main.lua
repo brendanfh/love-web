@@ -8,7 +8,8 @@ function love.load()
     quad = love.graphics.newQuad(50, 0, 50, 25)
     love.graphics.setBackgroundColor(255, 0, 0)
     
-    img = love.graphics.newImageFont("dummy.png", "abcd")
+    print(love.system.getPowerInfo())
+    img = love.graphics.newImage("dummy.png", "abcd")
 end
 
 function love.update(dt)
@@ -24,6 +25,9 @@ function love.draw()
     love.graphics.circle("fill", 300, 300, 100, 5)
     love.graphics.setColor(0, 0, 0)
     love.graphics.line(0, 0, 300, 300)
+
+    love.graphics.translate(x, y)
+    love.graphics.draw(img, 100, 100, 3.14159256 / 4);
     
     love.graphics.polygon("fill", { 0, -100, 100, 0, 0, 100, -100, 0 })
 end

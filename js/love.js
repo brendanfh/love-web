@@ -26,7 +26,7 @@ Love = (function() {
         this.joystick   = new Love.Joystick();
         this.keyboard   = new Love.Keyboard(this.event);
         this.math       = new Love.Math();
-        this.mouse      = new Love.Mouse();
+        this.mouse      = new Love.Mouse(this.event);
         this.sound      = new Love.Sound();
         this.system     = new Love.System();
         this.timer      = new Love.Timer();
@@ -366,21 +366,21 @@ Love.Graphics = (function() {
 
         self.draw = function(drawable, quad, x, y, r, sx, sy, ox, oy, kx, ky) {
             if(typeof quad == "number") {
-                self.__drawWhole(drawable, quad || 0, x || 0, y || 0, r || 1, sx || 1, sy || 0, ox || 0, oy || 0, kx || 0);
+                __drawWhole(drawable, quad || 0, x || 0, y || 0, r || 1, sx || 1, sy || 0, ox || 0, oy || 0, kx || 0);
             } else {
-                self.__drawWithQuad(drawable, quad, x || 0, y || 0, r || 0, sx || 1, sy || 1, ox || 0, oy || 0, kx || 0, ky || 0);
+                __drawWithQuad(drawable, quad, x || 0, y || 0, r || 0, sx || 1, sy || 1, ox || 0, oy || 0, kx || 0, ky || 0);
             }
         };
         
-        self.__drawWhole = function(drawable, x, y, r, sx, sy, ox, oy, kx, ky) {
+        var __drawWhole = function(drawable, x, y, r, sx, sy, ox, oy, kx, ky) {
             var ctx = self.ctx;
             var c = r == 0 ? 1 : Math.cos(r);
             var s = r == 0 ? 0 : Math.sin(r);
-            var matrix = $M([
+            var matrix = self.__matrix.x($M([
                 [sx * c - kx * sy * s, ky * sx * c - sy * s, x - ox],
                 [sx * s + kx * sy * c, ky * sx * s + sy * c, y - oy],
                 [0,                    0,                    1     ]
-            ]);
+            ]));
            
             ctx.save();
             self.__updateTransform(matrix);
@@ -388,15 +388,15 @@ Love.Graphics = (function() {
             ctx.restore();
         };
         
-        self.__drawWithQuad = function(drawable, quad, x, y, r, sx, sy, ox, oy, kx, ky) {
+        var __drawWithQuad = function(drawable, quad, x, y, r, sx, sy, ox, oy, kx, ky) {
             var ctx = self.ctx, w = drawable.getWidth(), h = drawable.getHeight();
             var c = r == 0 ? 1 : Math.cos(r);
             var s = r == 0 ? 0 : Math.sin(r);
-            var matrix = $M([
+            var matrix = self.__matrix.x($M([
                 [sx * c - kx * sy * s, ky * sx * c - sy * s, x - ox],
                 [sx * s + kx * sy * c, ky * sx * s + sy * c, y - oy],
                 [0,                    0,                    1     ]
-            ]);
+            ]));
            
             ctx.save();
             self.__updateTransform(matrix);
@@ -515,8 +515,7 @@ Love.Graphics = (function() {
         
         //Constructors
         self.newCanvas = function(width, height) {
-            var canvas = new Love.Graphics.Canvas2D(width, height, this);
-            return canvas;
+            return new Love.Graphics.Canvas2D(width, height, this);
         };
         
         self.newImage = function(path) {
@@ -549,6 +548,7 @@ Love.Graphics = (function() {
         };
 
         //State
+        //TODO: Implement all state functions
         self.getCanvas = function() {
             return self.canvas;  
         };
@@ -580,6 +580,8 @@ Love.Graphics = (function() {
     return Graphics;
 })();
 
+
+//TODO: Look at the pull request on punchdrunk for ideas to make this proper
 Love.Graphics.Font = (function() {
     function Font(name, size) {
         define(this);
@@ -601,7 +603,7 @@ Love.Graphics.Font = (function() {
         };
         
         self.getDescent = function() {
-            return 0;  
+            return 0;
         };
         
         self.getFilter = function() {
@@ -609,15 +611,15 @@ Love.Graphics.Font = (function() {
         };
         
         self.getHeight = function() {
-            return self.size;  
+            return self.size;
         };
         
         self.getLineHeight = function() {
-            return self.size;  
+            return self.size;
         };
         
         self.getWidth = function(_, line) {
-            unimplemented("Font:getWidth");  
+            unimplemented("Font:getWidth");
         };
         
         self.getWrap = function(_, lines, width) {
@@ -702,7 +704,7 @@ Love.Graphics.ImageFont = (function() {
         };
         
         self.setLineHeight = function() {
-            unimplemented("ImageFont:setLineHeight");  
+            unimplemented("ImageFont:setLineHeight");
         };
     }
     
@@ -718,13 +720,13 @@ Love.Graphics.Image = (function() {
         });
         
         if(typeof path == "string") {
-            this.elem = document.querySelector("[src='"+path+"']");
+            this.elem = document.querySelector("[src='lua/"+path+"']");
             if(this.elem == null) {
                 this.elem = document.createElement("img");
                 this.elem.src = "lua/" + path;
                 this.elem.onload = cFunc;
             } else {
-                cFunc.call(null, this);
+                cFunc.call();
             }
         } else {
             this.elem = document.createElement("img");
@@ -883,7 +885,7 @@ Love.Graphics.Canvas2D = (function() {
         };
         
         self.getWidth = function() {
-            return self.width;  
+            return self.width;
         };
         
         self.getWrap = function() {
@@ -908,6 +910,7 @@ Love.Graphics.Canvas2D = (function() {
             unimplemented("Canvas:setWrap");  
         };
 
+        //These are non-standard but are used thoughout the engine
         self.setDimensions = function(width, height) {
             self.setWidth(width);
             self.setHeight(height);
@@ -945,21 +948,29 @@ Love.Joystick = (function() {
     return Joystick;
 })();
 
+
+//TODO: Add key repeating and text-input
 Love.Keyboard = (function() {
     function Keyboard(event) {
         define(this, event);
-        
-        this.keysDown = {};
     }
+    
     function define(self, event) {
+        var keysDown = {};
+        var repeat = false;
+        
         document.addEventListener("keydown", function(e) {
             e.preventDefault();
             e.stopPropagation();
             
             key = getKey(e);
-            self.keysDown[key] = true;
-            
-            event.push("keypressed", key, e.which);
+            if(keysDown[key] && repeat) {
+                event.push("keypressed", key, true);
+            }
+            if(!keysDown[key] && !repeat) {
+                event.push("keypressed", key, false);
+            }
+            keysDown[key] = true;
         }, true);
         
         document.addEventListener("keyup", function(e) {
@@ -967,9 +978,9 @@ Love.Keyboard = (function() {
             e.stopPropagation();
             
             key = getKey(e);
-            self.keysDown[key] = false;
+            keysDown[key] = false;
             
-            event.push("keyreleased", key, e.which);
+            event.push("keyreleased", key);
         }, true);
         
         var keys = {
@@ -1024,23 +1035,23 @@ Love.Keyboard = (function() {
         }
         
         self.hasKeyRepeat = function() {
-            return false;  
+            return repeat;
         };
         
         self.hasTextInput = function() {
-            return false;  
+            return false;
         };
         
         self.isDown = function(key) {
-            if(!self.keysDown[key]) {
+            if(!keysDown[key]) {
                 return false;
             } else {
-                return self.keysDown[key];
+                return keysDown[key];
             }
         };
         
-        self.setKeyRepeat = function() {
-            //Unneeded for JS  
+        self.setKeyRepeat = function(r) {
+            repeat = r;
         };
         
         self.setTextInput = function() {
@@ -1071,12 +1082,162 @@ Love.Math = (function() {
     return LMath;
 })();
 
-Love.Mouse = (function() {
-    function Mouse() {
 
+//TODO: Implement Pointer-lock api for setGrabbed
+Love.Mouse = (function() {
+    function Mouse(event) {
+        define(this, event);
+    }    
+    
+    function define(self, event) {
+        var buttons = {
+            "l" : false,
+            "m" : false,
+            "r" : false,
+            "wd": false,
+            "wu": false,
+            "x1": false,
+            "x2": false
+        };
+        
+        var love_buttons = ["l", "m", "r", "x1", "x2"];
+        
+        var __x = 0;
+        var __y = 0;
+        var __cursor = new Love.Mouse.Cursor();
+        
+        Love.element.addEventListener("mousedown", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var x = e.screenX - Love.element.getBoundingClientRect().left;
+            var y = e.screenY - Love.element.getBoundingClientRect().top;
+            
+            buttons[e.which] = true;
+            
+            __x = x;
+            __y = y;
+            event.push("mousepressed", x, y, love_buttons[e.which]);
+        }, true);
+        
+        Love.element.addEventListener("mouseup", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var x = e.screenX - Love.element.getBoundingClientRect().left;
+            var y = e.screenY - Love.element.getBoundingClientRect().top;
+            
+            button[e.which] = false;
+            
+            __x = x;
+            __y = y;
+            event.push("mousereleased", x, y, love_buttons[e.which]);
+        }, true);
+        
+        Love.element.addEventListener("mousemove", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var x = e.screenX - Love.element.getBoundingClientRect().left;
+            var y = e.screenY - Love.element.getBoundingClientRect().top;
+            var dx = x - __x;
+            var dy = y - __y;
+            
+            __x = x;
+            __y = y;
+            event.push("mousemoved", x, y, dx, dy);
+        }, true);
+        
+        Love.element.addEventListener("wheel", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var x = e.screenX - Love.element.getBoundingClientRect().left;
+            var y = e.screenY - Love.element.getBoundingClientRect().top;
+            event.push("mousepressed", x, y, e.wheelDelta > 0 ? "wu" : "wd");
+        }, true);
+        
+        self.getCursor = function() {
+            return __cursor;
+        };
+        
+        self.getPosition = function() {
+            return [__x, __y];  
+        };
+        
+        self.getRelativeMode = function() {
+            return false;  
+        };
+        
+        self.getSystemCursor = function() {
+            return new Love.Mouse.Cursor();  
+        };
+        
+        self.getX = function() {
+            return __x;
+        };
+        
+        self.getY = function() {
+            return __y;
+        };
+        
+        self.isDown = function(button) {
+            return buttons[button];
+        };
+        
+        self.isGrabbed = function() {
+            return false;  
+        };
+        
+        self.isVisible = function() {
+            return __cursor.__visible;
+        };
+        
+        self.newCursor = function(data) {
+            unimplemented("love.mouse.newCursor");  
+        };
+        
+        self.setCursor = function(cursor) {
+            __cursor = cursor;
+            Love.element.style.cursor = cursor.getType(cursor);
+        };
+        
+        self.setGrabbed = function() {
+            neverimplemented("love.mouse.setGrabbed");  
+        };
+        
+        self.setPosition = function() {
+            neverimplemented("love.mouse.setPosition");  
+        };
+        
+        self.setRelativeMode = function() {
+            neverimplemented("love.mouse.setRelativeMode");  
+        };
+        
+        self.setVisible = function(visible) {
+            __cursor.__visible = visible;
+            Love.element.style.cursor = __cursor.getType(__cursor);
+        };
+        
+        self.setX = function() {
+            neverimplemented("love.mouse.setX");
+        };
+        
+        self.setY = function() {
+            neverimplemented("love.mouse.setY");  
+        };
     }
 
     return Mouse;
+})();
+
+Love.Mouse.Cursor = (function() {
+    function Cursor(type, visible) {
+        self.type = type || "default";
+        self.__visible = visible || true;
+    }
+    
+    Cursor.prototype.getType = function(self) {
+        return !self.__visible ? "none" : self.type;
+    };
+    
+    return Cursor;
 })();
 
 //TODO: Impl this.... maybe
@@ -1105,17 +1266,22 @@ Love.System = (function() {
         define(this);
         
         navigator.battery = navigator.battery || navigator.webkitBattery || navigator.mozBattery || navigator.msBattery;
-        
-        this.clipboardText = "";
+        if(!navigator.battery) {
+            navigator.getBattery().then(function(battery) {
+                navigator.battery = battery; 
+            });
+        }
     }
     
     function define(self) {
+        var clipboardText = "";
+        
         self.getClipboardText = function() {
-            return this.clipboardText;
+            return clipboardText;
         };
         
         self.setClipboardText = function(text) {
-            this.clipboardText = text;  
+            clipboardText = text;  
         };
         
         self.getOS = function() {
@@ -1126,7 +1292,7 @@ Love.System = (function() {
             if(navigator.battery) {
                 var state = "",
                     percent = Math.floor(navigator.battery.level * 100),
-                    discharge = navigator.battery.dischargTime;
+                    discharge = navigator.battery.dischargingTime;
                 if(navigator.battery.charging) {
                     if(percent >= 99) {
                         state = "charged";
@@ -1143,11 +1309,11 @@ Love.System = (function() {
         };
         
         self.getProcessorCount = function() {
-            return navigator.hardwareConcurrency || 1;  
+            return navigator.hardwareConcurrency || 1;
         };
         
         self.openURL = function(url) {
-            window.open(url)  
+            window.open(url);
         };
     }
 
@@ -1158,28 +1324,28 @@ Love.Timer = (function() {
     function Timer() {
         define(this);
         
-        this.dtLimit = 0.25;
-        
-        this.dt = 0;
-        this.tp = Date.now();
-        
         window.requestAnimationFrame = window.requestAnimationFrame || function(c) {
             setTimeout(callback, 60/1000);
         };
     }
     
     function define(self) {
+        var dtLimit = 0.25;
+        
+        var dt = 0;
+        var tp = Date.now();
+        
         self.getDelta = function() {
-            return self.dt;
+            return dt;
         };
         
         self.getTime = function() {
-            return self.tp;
+            return tp;
         };
         
         self.getFPS = function() {
-            if(self.dt == 0) { return 0; }
-            return 1 / self.dt;
+            if(dt == 0) { return 0; }
+            return 1 / dt;
         };
         
         self.sleep = function() {
@@ -1187,9 +1353,9 @@ Love.Timer = (function() {
         };
         
         self.step = function() {
-            var delta = (Date.now() - self.tp) / 1000;
-            self.dt = Math.max(0, Math.min(self.dtLimit, delta));
-            self.tp += self.dt * 1000;
+            var delta = (Date.now() - tp) / 1000;
+            dt = Math.max(0, Math.min(dtLimit, delta));
+            tp += dt * 1000;
         };
         
         self.nextFrame = function(callback) {
@@ -1203,7 +1369,6 @@ Love.Timer = (function() {
 Love.Window = (function() {
     function Window(graphics, event) {
         define(this, graphics);
-        this.fullscreen = false;
         
         window.onbeforeunload = function() {
             event.quit();
@@ -1215,6 +1380,10 @@ Love.Window = (function() {
         
         window.onfocus = function() {
             event.push("visible", true);  
+        };
+        
+        document.oncontextmenu = function(e) {
+            e.preventDefault();
         };
     }
     
@@ -1231,6 +1400,8 @@ Love.Window = (function() {
         document.addEventListener("mozfullscreenchange", handler);
         document.addEventListener("fullscreenchange", handler);
         document.addEventListener("MSFullscreenchange", handler);
+        
+        var fullscreen = false;
         
         self.fromPixels = function() {
             unimplemented("love.window.fromPixels");  
@@ -1253,7 +1424,7 @@ Love.Window = (function() {
         };
         
         self.getFullscreen = function() {
-            return self.fullscreen;
+            return fullscreen;
         };
         
         self.getFullscreenModes = function() {
@@ -1307,8 +1478,8 @@ Love.Window = (function() {
             return true;  
         };
         
-        self.setFullscreen = function(fullscreen) {
-            self.fullscreen = fullscreen;
+        self.setFullscreen = function(fs) {
+            fullscreen = fs;
             //TODO Implement fullscreen for the game... somehow
             if(self.fullscreen) {
                 Love.element.requestFullscreen = Love.element.requestFullscreen
