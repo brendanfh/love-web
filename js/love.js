@@ -26,7 +26,7 @@ Love = (function() {
         this.joystick   = new Love.Joystick();
         this.keyboard   = new Love.Keyboard(this.event);
         this.math       = new Love.Math();
-        this.mouse      = new Love.Mouse(this.event);
+        this.mouse      = new Love.Mouse(this.event, this.window);
         this.sound      = new Love.Sound();
         this.system     = new Love.System();
         this.timer      = new Love.Timer();
@@ -43,6 +43,7 @@ Love = (function() {
     Love.prototype.mousefocus = function() { };
     Love.prototype.mousemoved = function() { };
     Love.prototype.mousepressed = function() { };
+    Love.prototype.mousereleased = function() { };
     Love.prototype.resize = function() { };
     Love.prototype.run = function() {
         this.load.call();
@@ -1085,11 +1086,11 @@ Love.Math = (function() {
 
 //TODO: Implement Pointer-lock api for setGrabbed
 Love.Mouse = (function() {
-    function Mouse(event) {
-        define(this, event);
+    function Mouse(event, win) {
+        define(this, event, win);
     }    
     
-    function define(self, event) {
+    function define(self, event, win) {
         var buttons = {
             "l" : false,
             "m" : false,
@@ -1107,38 +1108,56 @@ Love.Mouse = (function() {
         var __cursor = new Love.Mouse.Cursor();
         
         Love.element.addEventListener("mousedown", function(e) {
+            var x, y, dims, rect = Love.element.getBoundingClientRect();
             e.preventDefault();
             e.stopPropagation();
-            var x = e.screenX - Love.element.getBoundingClientRect().left;
-            var y = e.screenY - Love.element.getBoundingClientRect().top;
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+            if(win.getFullscreen()) {
+                dims = win.getDimensions();
+                x *= (dims[0] / window.innerWidth);
+                y *= (dims[1] / window.innerHeight);
+            }
             
             buttons[e.which] = true;
             
             __x = x;
             __y = y;
-            event.push("mousepressed", x, y, love_buttons[e.which]);
+            event.push("mousepressed", x, y, love_buttons[e.which - 1]);
         }, true);
         
         Love.element.addEventListener("mouseup", function(e) {
+            var x, y, dims, rect = Love.element.getBoundingClientRect();
             e.preventDefault();
             e.stopPropagation();
-            var x = e.screenX - Love.element.getBoundingClientRect().left;
-            var y = e.screenY - Love.element.getBoundingClientRect().top;
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+            if(win.getFullscreen()) {
+                dims = win.getDimensions();
+                x *= (dims[0] / window.innerWidth);
+                y *= (dims[1] / window.innerHeight);
+            }
             
-            button[e.which] = false;
+            buttons[e.which] = false;
             
             __x = x;
             __y = y;
-            event.push("mousereleased", x, y, love_buttons[e.which]);
+            event.push("mousereleased", x, y, love_buttons[e.which - 1]);
         }, true);
         
         Love.element.addEventListener("mousemove", function(e) {
+            var x, y, dims, dx, dy, rect = Love.element.getBoundingClientRect();
             e.preventDefault();
             e.stopPropagation();
-            var x = e.screenX - Love.element.getBoundingClientRect().left;
-            var y = e.screenY - Love.element.getBoundingClientRect().top;
-            var dx = x - __x;
-            var dy = y - __y;
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+            if(win.getFullscreen()) {
+                dims = win.getDimensions();
+                x *= (dims[0] / window.innerWidth);
+                y *= (dims[1] / window.innerHeight);
+            }
+            dx = x - __x;
+            dy = y - __y;
             
             __x = x;
             __y = y;
@@ -1146,10 +1165,16 @@ Love.Mouse = (function() {
         }, true);
         
         Love.element.addEventListener("wheel", function(e) {
+            var x, y, dims, rect = Love.element.getBoundingClientRect();
             e.preventDefault();
             e.stopPropagation();
-            var x = e.screenX - Love.element.getBoundingClientRect().left;
-            var y = e.screenY - Love.element.getBoundingClientRect().top;
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+            if(win.getFullscreen()) {
+                dims = win.getDimensions();
+                x *= (dims[0] / window.innerWidth);
+                y *= (dims[1] / window.innerHeight);
+            }
             event.push("mousepressed", x, y, e.wheelDelta > 0 ? "wu" : "wd");
         }, true);
         
@@ -1194,8 +1219,8 @@ Love.Mouse = (function() {
         };
         
         self.setCursor = function(cursor) {
-            __cursor = cursor;
-            Love.element.style.cursor = cursor.getType(cursor);
+            __cursor = new Love.Mouse.Cursor(cursor, __cursor.__visible);
+            Love.element.style.cursor = __cursor.__getHtmlType();
         };
         
         self.setGrabbed = function() {
@@ -1212,7 +1237,7 @@ Love.Mouse = (function() {
         
         self.setVisible = function(visible) {
             __cursor.__visible = visible;
-            Love.element.style.cursor = __cursor.getType(__cursor);
+            Love.element.style.cursor = __cursor.__getHtmlType();
         };
         
         self.setX = function() {
@@ -1229,12 +1254,31 @@ Love.Mouse = (function() {
 
 Love.Mouse.Cursor = (function() {
     function Cursor(type, visible) {
-        self.type = type || "default";
-        self.__visible = visible || true;
+        this.type = type || "default";
+        this.__visible = visible != null ? visible : true;
     }
     
+    var htmlcursor = {
+        "arrow"     : "default",
+        "ibeam"     : "text",
+        "wait"      : "wait",
+        "waitarrow" : "progress",
+        "crosshair" : "crosshair",
+        "sizenwse"  : "nwse-resize",
+        "sizenesw"  : "nesw-resize",
+        "sizewe"    : "ew-resize",
+        "sizens"    : "ns-resize",
+        "sizeall"   : "move",
+        "no"        : "not-allowed",
+        "hand"      : "grab"
+    }
+    
+    Cursor.prototype.__getHtmlType = function() {
+        return !this.__visible ? "none" : htmlcursor[this.type];
+    };
+    
     Cursor.prototype.getType = function(self) {
-        return !self.__visible ? "none" : self.type;
+        return self.type;
     };
     
     return Cursor;
@@ -1267,6 +1311,7 @@ Love.System = (function() {
         
         navigator.battery = navigator.battery || navigator.webkitBattery || navigator.mozBattery || navigator.msBattery;
         if(!navigator.battery) {
+            //NOTE: This will not update as the program continues
             navigator.getBattery().then(function(battery) {
                 navigator.battery = battery; 
             });
@@ -1325,7 +1370,7 @@ Love.Timer = (function() {
         define(this);
         
         window.requestAnimationFrame = window.requestAnimationFrame || function(c) {
-            setTimeout(callback, 60/1000);
+            setTimeout(c, 60/1000);
         };
     }
     
@@ -1389,17 +1434,22 @@ Love.Window = (function() {
     
     function define(self, graphics) {
         var ts = 0;
-        var handler = function(e) {
-            //If the timestamp of the event is within 100ms of the time we went fullscreen,
-            //we can assume we are going fullscreen
-            if(e.timeStamp - ts > 100) {
+        var handler = function() {
+            var elem = document.fullscreenElement
+                    || document.mozFullScreenElement
+                    || document.webkitFullscreenElement
+                    || document.msFullScreenElement;
+            if(elem != Love.element) {
+                fullscreen = false;
                 self.setFullscreen(false);
+            } else {
+                fullscreen = true;
             }
         };
-        document.addEventListener("webkitfullscreenchange", handler);
-        document.addEventListener("mozfullscreenchange", handler);
-        document.addEventListener("fullscreenchange", handler);
-        document.addEventListener("MSFullscreenchange", handler);
+        document.addEventListener("webkitfullscreenchange", handler, true);
+        document.addEventListener("mozfullscreenchange", handler, true);
+        document.addEventListener("fullscreenchange", handler, true);
+        document.addEventListener("MSFullscreenchange", handler, true);
         
         var fullscreen = false;
         
@@ -1479,17 +1529,15 @@ Love.Window = (function() {
         };
         
         self.setFullscreen = function(fs) {
-            fullscreen = fs;
-            //TODO Implement fullscreen for the game... somehow
-            if(self.fullscreen) {
-                Love.element.requestFullscreen = Love.element.requestFullscreen
-                                              || Love.element.mozRequestFullscreen
+            if(fs) {
+                Love.element.requestFullscreen = Love.element.mozRequestFullScreen
                                               || Love.element.webkitRequestFullscreen
-                                              || Love.element.msRequestFullscreen;
+                                              || Love.element.msRequestFullscreen
+                                              || Love.element.requestFullscreen;
                 document.getElementById("fs-text").setAttribute("style", "display: block;");
                 document.getElementById("fs-btn-yes").addEventListener("click", function() {
-                    document.getElementById("fs-btn-yes").removeEventListener("click");
-                    document.getElementById("fs-btn-no").removeEventListener("click");
+                    document.getElementById("fs-btn-yes").removeEventListener("click", null);
+                    document.getElementById("fs-btn-no").removeEventListener("click", null);
                     document.getElementById("fs-text").setAttribute("style", "display: none;");
                     ts = Date.now();
                     Love.element.requestFullscreen();
@@ -1498,13 +1546,13 @@ Love.Window = (function() {
                 });
                 
                 document.getElementById("fs-btn-no").addEventListener("click", function() {
-                    document.getElementById("fs-btn-yes").removeEventListener("click");
-                    document.getElementById("fs-btn-no").removeEventListener("click");
+                    document.getElementById("fs-btn-yes").removeEventListener("click", null);
+                    document.getElementById("fs-btn-no").removeEventListener("click", null);
                     document.getElementById("fs-text").setAttribute("style", "display: none;");
                 });
             } else {
                 document.exitFullscreen = document.exitFullscreen
-                                       || document.mozCancelFullscreen
+                                       || document.mozCancelFullScreen
                                        || document.webkitExitFullscreen
                                        || document.msExitFullscreen;
                 document.exitFullscreen();

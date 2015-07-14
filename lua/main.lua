@@ -8,6 +8,11 @@ function love.load()
     quad = love.graphics.newQuad(50, 0, 50, 25)
     love.graphics.setBackgroundColor(255, 0, 0)
     
+    love.window.setFullscreen(true)
+    
+    love.mouse.setVisible(false)
+    love.mouse.setCursor("ibeam")
+    
     print(love.system.getPowerInfo())
     img = love.graphics.newImage("dummy.png", "abcd")
 end
@@ -18,6 +23,19 @@ function love.update(dt)
     if love.keyboard.isDown "a" then x = x - 50 * dt end
     if love.keyboard.isDown "d" then x = x + 50 * dt end
     t = t + dt
+end
+
+function love.mousepressed(x, y, button)
+    if button == "l" then
+        love.mouse.setVisible(false)
+    elseif button == "r" then
+        love.mouse.setVisible(true)
+    end
+end
+
+function love.mousemoved(x1, y1)
+    x = x1
+    y = y1
 end
 
 function love.draw()
