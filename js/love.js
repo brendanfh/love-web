@@ -76,12 +76,103 @@ Love = (function() {
     return Love;
 })();
 
+
+//TODO: Look into Web Audio API for more advanced compatibility
 Love.Audio = (function() {
     function Audio() {
-
+        define(this);
+    }
+    
+    function define(self) {
+        var numSources = 0;
+        var masterVol = 1;
+        
+        self.getDistanceModel = function() {
+            return "inverse clamped";
+        };
+        
+        self.getDopplerScale = function() {
+            return 0;
+        };
+        
+        self.getOrientation = function() {
+            return [0, 0, 1, 0, 1, 0];
+        };
+        
+        self.getPosition = function() {
+            return [0, 0, -1];
+        };
+        
+        self.getSourceCount = function() {
+            return numSources;
+        };
+        
+        self.getVelocity = function() {
+            return [0, 0, 0];
+        };
+        
+        self.getVolume = function() {
+            return masterVol;
+        };
+        
+        self.newSource = function(name) {
+            return new Love.Audio.Source(name);
+        };
+        
+        self.pause = function(source) {
+            
+        };
+        
+        self.play = function(source) {
+            
+        };
+        
+        self.resume = function(source) {
+            
+        };
+        
+        self.rewind = function(source) {
+            
+        };
+        
+        self.setDistanceModel = function() {
+            unimplemented("love.audio.setDistanceModel");
+        };
+        
+        self.setDopplerScale = function() {
+            unimplemented("love.audio.setDopplerScale");
+        };
+        
+        self.setOrientation = function() {
+            unimplemented("love.audio.setOrientation");
+        };
+        
+        self.setPosition = function() {
+            unimplemented("love.audio.setPosition");
+        };
+        
+        self.setVelocity = function() {
+            unimplemented("love.audio.setVelocity");
+        };
+        
+        self.setVolume = function(volume) {
+            masterVol = volume;
+        };
+        
+        self.stop = function(source) {
+            
+        };
     }
 
     return Audio;
+})();
+
+Love.Audio.Source = (function() {
+    function ASource() {
+        
+    }
+    
+    return ASource;
 })();
 
 Love.Color = (function() {
@@ -1165,7 +1256,7 @@ Love.Mouse = (function() {
         }, true);
         
         Love.element.addEventListener("wheel", function(e) {
-            var x, y, dims, rect = Love.element.getBoundingClientRect();
+            var x, y, dims, rect = Love.element.getBoundingClientRect(), up;
             e.preventDefault();
             e.stopPropagation();
             x = e.clientX - rect.left;
@@ -1175,7 +1266,8 @@ Love.Mouse = (function() {
                 x *= (dims[0] / window.innerWidth);
                 y *= (dims[1] / window.innerHeight);
             }
-            event.push("mousepressed", x, y, e.wheelDelta > 0 ? "wu" : "wd");
+            up = e.deltaY < 0;
+            event.push("mousepressed", x, y, up ? "wu" : "wd");
         }, true);
         
         self.getCursor = function() {
@@ -1254,7 +1346,7 @@ Love.Mouse = (function() {
 
 Love.Mouse.Cursor = (function() {
     function Cursor(type, visible) {
-        this.type = type || "default";
+        this.type = type || "arrow";
         this.__visible = visible != null ? visible : true;
     }
     
@@ -1441,7 +1533,7 @@ Love.Window = (function() {
                     || document.msFullScreenElement;
             if(elem != Love.element) {
                 fullscreen = false;
-                self.setFullscreen(false);
+                self.setFullscreen(false, true);
             } else {
                 fullscreen = true;
             }
@@ -1528,27 +1620,19 @@ Love.Window = (function() {
             return true;  
         };
         
-        self.setFullscreen = function(fs) {
+        self.setFullscreen = function(fs, fromCallback) {
+            fromCallback = fromCallback == null ? false : fromCallback;
             if(fs) {
                 Love.element.requestFullscreen = Love.element.mozRequestFullScreen
                                               || Love.element.webkitRequestFullscreen
                                               || Love.element.msRequestFullscreen
                                               || Love.element.requestFullscreen;
                 document.getElementById("fs-text").setAttribute("style", "display: block;");
-                document.getElementById("fs-btn-yes").addEventListener("click", function() {
-                    document.getElementById("fs-btn-yes").removeEventListener("click", null);
-                    document.getElementById("fs-btn-no").removeEventListener("click", null);
-                    document.getElementById("fs-text").setAttribute("style", "display: none;");
+                document.getElementById("fs-btn").addEventListener("click", function() {
                     ts = Date.now();
                     Love.element.requestFullscreen();
                     var dims = self.getDesktopDimensions();
                     Love.element.setAttribute("style", "width: " + dims[0] + "px; height: " + dims[1] + "px;");
-                });
-                
-                document.getElementById("fs-btn-no").addEventListener("click", function() {
-                    document.getElementById("fs-btn-yes").removeEventListener("click", null);
-                    document.getElementById("fs-btn-no").removeEventListener("click", null);
-                    document.getElementById("fs-text").setAttribute("style", "display: none;");
                 });
             } else {
                 document.exitFullscreen = document.exitFullscreen
@@ -1558,6 +1642,11 @@ Love.Window = (function() {
                 document.exitFullscreen();
                 var dims = self.getDimensions();
                 Love.element.setAttribute("style", "width: " + dims[0] + "px; height: " + dims[1] + "px;");
+                //Dont remove the message unless the love2d program says to
+                if(!fromCallback) {
+                    document.getElementById("fs-text").setAttribute("style", "display: none;");
+                    document.getElementById("fs-btn").removeEventListener("click", null);
+                }
             }
         };
         

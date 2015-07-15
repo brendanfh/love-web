@@ -35,7 +35,7 @@ end
 
 function love.mousemoved(x1, y1)
     x = x1
-    y = y1
+    y = y1    
 end
 
 function love.draw()

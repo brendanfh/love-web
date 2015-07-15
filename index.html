@@ -12,14 +12,13 @@
     </style>
 </head>
 <body>
-    <img src="http://dummyimage.com/100x50/000/fff" />
+    <img src="lua/dummy.png" />
     <center>
-        <div id="fs-text" style="display: none">
-            This game wants to be fullscreened. Do you want to allow this?<br>
-            <input type="button" id="fs-btn-no" value="No"></input>
-            <input type="button" id="fs-btn-yes" value="Yes"></input>
-        </div>
         <canvas id="game">You're browser doesn't support the &lt;canvas&gt; element</canvas>
+        <div id="fs-text" style="display: none">
+            This game can be played fullscreen. <br>
+            <input type="button" id="fs-btn" value="Go Fullscreen"></input>
+        </div>
     </center>
     <script>
         window.onload = function() {
