@@ -1,81 +1,6 @@
-var wrap = function(t, f) {
-    return function() {
-        f.apply(t, arguments);
-    }
-};
-
-var unimplemented = function(name) {
-    console.warn("[", name, "] hasn't been implemented yet");  
-};
-
-var neverimplemented = function(name) {
-    console.warn("[", name, "] can not be implemented in JS");
-};
-
-Love = (function() {
-    function Love(elem, conf) {
-        elem = elem || null;
-        Love.element = elem;
-        
-        this.graphics   = new Love.Graphics(conf.width, conf.height);
-        this.event      = new Love.Event();
-        this.window     = new Love.Window(this.graphics, this.event);
-        this.audio      = new Love.Audio();
-        this.filesystem = new Love.FileSystem();
-        this.font       = new Love.Font();
-        this.joystick   = new Love.Joystick();
-        this.keyboard   = new Love.Keyboard(this.event);
-        this.math       = new Love.Math();
-        this.mouse      = new Love.Mouse(this.event, this.window);
-        this.sound      = new Love.Sound();
-        this.system     = new Love.System();
-        this.timer      = new Love.Timer();
-        
-        this.run = wrap(this, this.run);
-    }
-    
-    Love.prototype.load = function() { };
-    Love.prototype.update = function() { };
-    Love.prototype.draw = function() { };
-    Love.prototype.quit = function() { };
-    Love.prototype.keypressed = function() { };
-    Love.prototype.keyreleased = function() { };
-    Love.prototype.mousefocus = function() { };
-    Love.prototype.mousemoved = function() { };
-    Love.prototype.mousepressed = function() { };
-    Love.prototype.mousereleased = function() { };
-    Love.prototype.resize = function() { };
-    Love.prototype.run = function() {
-        this.load.call();
-        this.timer.step(); // Step the timer so it doesn't count load time
-        
-        var i = 0, e;
-        var gameloop = (function(self) {
-            return function() {
-                for(i = 0; i < self.event.queue.length; i++) {
-                    e = self.event.queue[i];
-                    self[e[0]].apply(null, e.slice(1, e.length));
-                }
-                self.event.clear();
-                
-                self.timer.step();
-                self.update.call(null, self.timer.getDelta());
-                
-                self.graphics.origin()
-                self.graphics.clear();
-                self.draw.call();
-                
-                self.timer.nextFrame(gameloop);
-            };
-        })(this);
-        
-        this.timer.nextFrame(gameloop);
-    };
-    Love.prototype.visible = function() { };
-    
-    return Love;
-})();
-
+//Love on the web
+var Love;
+Love = Love || defineLove();
 
 //TODO: Look into Web Audio API for more advanced compatibility
 Love.Audio = (function() {
@@ -207,7 +132,7 @@ Love.Audio.Source = (function() {
     };
     
     return ASource;
-})();
+})();;Love = Love || defineLove();
 
 Love.Color = (function() {
     function Color(r, g, b, a) {
@@ -227,7 +152,7 @@ Love.Color = (function() {
     }
 
     return Color;
-})();
+})();;Love = Love || defineLove();
 
 Love.Event = (function() {
     function Event() {
@@ -262,6 +187,7 @@ Love.Event = (function() {
 
     return Event;
 })();
+;Love = Love || defineLove();
 
 //Most of FileSystem can't be reinplemented but local storage will help
 Love.FileSystem = (function() {
@@ -399,6 +325,7 @@ Love.FileSystem = (function() {
 
     return FileSystem;
 })();
+;Love = Love || defineLove();
 
 Love.Font = (function() {
     function Font() {
@@ -417,6 +344,7 @@ Love.Font = (function() {
 
     return Font;
 })();
+;Love = Love || defineLove();
 
 Love.Graphics = (function() {
     function Graphics(width, height) {
@@ -1065,6 +993,7 @@ Love.Graphics.Canvas2D = (function() {
     
     return Canvas2D;
 })();
+;Love = Love || defineLove();
 
 Love.Joystick = (function() {
     function Joystick() {
@@ -1072,8 +1001,7 @@ Love.Joystick = (function() {
     }
 
     return Joystick;
-})();
-
+})();;Love = Love || defineLove();
 
 //TODO: Add key repeating and text-input
 Love.Keyboard = (function() {
@@ -1194,7 +1122,86 @@ Love.Keyboard = (function() {
     }
 
     return Keyboard;
-})();
+})();;function defineLove() {
+    return (function() {
+        function Love(elem, conf) {
+            wrap = function(t, f) {
+                return function() {
+                    f.apply(t, arguments);
+                }
+            };
+            
+            unimplemented = function(name) {
+                console.warn("[", name, "] hasn't been implemented yet");  
+            };
+            
+            neverimplemented = function(name) {
+                console.warn("[", name, "] can not be implemented in JS");
+            };
+            
+            elem = elem || null;
+            Love.element = elem;
+            
+            this.graphics   = new Love.Graphics(conf.width, conf.height);
+            this.event      = new Love.Event();
+            this.window     = new Love.Window(this.graphics, this.event);
+            this.audio      = new Love.Audio();
+            this.filesystem = new Love.FileSystem();
+            this.font       = new Love.Font();
+            this.joystick   = new Love.Joystick();
+            this.keyboard   = new Love.Keyboard(this.event);
+            this.math       = new Love.Math();
+            this.mouse      = new Love.Mouse(this.event, this.window);
+            this.sound      = new Love.Sound();
+            this.system     = new Love.System();
+            this.timer      = new Love.Timer();
+            
+            this.run = wrap(this, this.run);
+        }
+        
+        Love.prototype.load = function() { };
+        Love.prototype.update = function() { };
+        Love.prototype.draw = function() { };
+        Love.prototype.quit = function() { };
+        Love.prototype.keypressed = function() { };
+        Love.prototype.keyreleased = function() { };
+        Love.prototype.mousefocus = function() { };
+        Love.prototype.mousemoved = function() { };
+        Love.prototype.mousepressed = function() { };
+        Love.prototype.mousereleased = function() { };
+        Love.prototype.resize = function() { };
+        Love.prototype.run = function() {
+            this.load.call();
+            this.timer.step(); // Step the timer so it doesn't count load time
+            
+            var i = 0, e;
+            var gameloop = (function(self) {
+                return function() {
+                    for(i = 0; i < self.event.queue.length; i++) {
+                        e = self.event.queue[i];
+                        self[e[0]].apply(null, e.slice(1, e.length));
+                    }
+                    self.event.clear();
+                    
+                    self.timer.step();
+                    self.update.call(null, self.timer.getDelta());
+                    
+                    self.graphics.origin()
+                    self.graphics.clear();
+                    self.draw.call();
+                    
+                    self.timer.nextFrame(gameloop);
+                };
+            })(this);
+            
+            this.timer.nextFrame(gameloop);
+        };
+        Love.prototype.visible = function() { };
+        
+        return Love;
+    })();
+    
+};Love = Love || defineLove();
 
 Love.Math = (function() {
     function LMath() {
@@ -1206,8 +1213,7 @@ Love.Math = (function() {
     }
 
     return LMath;
-})();
-
+})();;Love = Love || defineLove();
 
 //TODO: Implement Pointer-lock api for setGrabbed
 Love.Mouse = (function() {
@@ -1408,10 +1414,7 @@ Love.Mouse.Cursor = (function() {
     };
     
     return Cursor;
-})();
-
-//TODO: Impl this.... maybe
-//Love.Physics
+})();;//Ha ha ha ha ha no....;Love = Love || defineLove();
 
 Love.Sound = (function() {
     function Sound() {
@@ -1429,7 +1432,7 @@ Love.Sound = (function() {
     }
 
     return Sound;
-})();
+})();;Love = Love || defineLove();
 
 Love.System = (function() {
     function System() {
@@ -1489,7 +1492,7 @@ Love.System = (function() {
     }
 
     return System;
-})();
+})();;Love = Love || defineLove();
 
 Love.Timer = (function() {
     function Timer() {
@@ -1535,7 +1538,7 @@ Love.Timer = (function() {
     }
 
     return Timer;
-})();
+})();;Love = Love || defineLove();
 
 Love.Window = (function() {
     function Window(graphics, event) {
@@ -1716,7 +1719,3 @@ Love.Window = (function() {
 
     return Window;
 })();
-
-if(module) {
-    module.exports = Love;
-}
