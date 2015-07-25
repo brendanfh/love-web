@@ -84,11 +84,19 @@ Love.Audio = (function() {
     }
     
     function define(self) {
-        var numSources = 0;
-        var masterVol = 1;
+        var ctx = new AudioContext() || new webkitAudioContext();
+        var volNode = ctx.createGain();
+        volNode.connect(ctx.destination);
+        
+        var panNode = ctx.createPanner();
+        panNode.connect(volNode);
+        
+        var orientation = [ 0, 0, -1, 0, 1, 0 ];
+        var position = [ 0, 0, 0 ];
+        var velocity = [ 0, 0, 0 ];
         
         self.getDistanceModel = function() {
-            return "inverse clamped";
+            return panNode.distanceModel;
         };
         
         self.getDopplerScale = function() {
@@ -96,27 +104,27 @@ Love.Audio = (function() {
         };
         
         self.getOrientation = function() {
-            return [0, 0, 1, 0, 1, 0];
+            return orientation;
         };
         
         self.getPosition = function() {
-            return [0, 0, -1];
+            return position;
         };
         
         self.getSourceCount = function() {
-            return numSources;
+            return 0;
         };
         
         self.getVelocity = function() {
-            return [0, 0, 0];
+            return velocity;
         };
         
         self.getVolume = function() {
-            return masterVol;
+            return volNode.gain.volume;
         };
         
         self.newSource = function(name) {
-            return new Love.Audio.Source(name);
+            return new Love.Audio.Source(name, ctx);
         };
         
         self.pause = function(source) {
@@ -156,7 +164,7 @@ Love.Audio = (function() {
         };
         
         self.setVolume = function(volume) {
-            masterVol = volume;
+            volNode.gain.volume = volume;
         };
         
         self.stop = function(source) {
@@ -168,9 +176,35 @@ Love.Audio = (function() {
 })();
 
 Love.Audio.Source = (function() {
-    function ASource() {
+    function ASource(path, ctx) {
+        this.panner = ctx.createPanner();
         
+        var req = new XMLHttpRequest();
+        req.open("GET", "lua/" + path, true);
+        req.responseType = "arraybuffer";
+        req.onload = wrap(this, function(e) {
+            ctx.decodeAudioData(req.response, wrap(this, function(buffer) {
+                this.buffer = buffer;
+            }));
+        });
+        req.send();
     }
+    
+    ASource.prototype.clone = function(self) {
+    
+    };
+    
+    ASource.prototype.getAttenuationDistance = function(self) {
+        unimplemented("Source:getAttenuationDistance");
+    };
+    
+    ASource.prototype.getChannels = function(self) {
+        if(self.buffer == null) return 0;
+        return self.buffer.numberOfChannels;
+    };
+    
+    ASource.prototype.getCone = function() {
+    };
     
     return ASource;
 })();
@@ -1282,8 +1316,8 @@ Love.Mouse = (function() {
             return false;  
         };
         
-        self.getSystemCursor = function() {
-            return new Love.Mouse.Cursor();  
+        self.getSystemCursor = function(type) {
+            return new Love.Mouse.Cursor(type);  
         };
         
         self.getX = function() {
@@ -1311,7 +1345,7 @@ Love.Mouse = (function() {
         };
         
         self.setCursor = function(cursor) {
-            __cursor = new Love.Mouse.Cursor(cursor, __cursor.__visible);
+            __cursor = cursor;
             Love.element.style.cursor = __cursor.__getHtmlType();
         };
         
@@ -1513,10 +1547,12 @@ Love.Window = (function() {
         
         window.onblur = function() {
             event.push("visible", false);
+            event.push("mousefocus", false);
         };
         
         window.onfocus = function() {
-            event.push("visible", true);  
+            event.push("visible", true);
+            event.push("mousefocus", true);
         };
         
         document.oncontextmenu = function(e) {

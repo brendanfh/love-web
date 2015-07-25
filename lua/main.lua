@@ -4,17 +4,19 @@ function love.load()
     x = 0
     y = 0
     t = 0
-    love.graphics.getCanvas():setFilter("nearest", "nearest")
-    quad = love.graphics.newQuad(50, 0, 50, 25)
+    --love.graphics.getCanvas():setFilter("nearest", "nearest")
+    quad = love.graphics.newQuad(50, 0, 50, 25, 100, 50)
     love.graphics.setBackgroundColor(255, 0, 0)
     
     love.window.setFullscreen(true)
     
     love.mouse.setVisible(false)
-    love.mouse.setCursor("ibeam")
+    love.mouse.setCursor(love.mouse.getSystemCursor("ibeam"))
     
     print(love.system.getPowerInfo())
-    img = love.graphics.newImage("dummy.png", "abcd")
+    img = love.graphics.newImage("dummy.png")
+    
+    snd = love.audio.newSource("band_movement1.mp3")
 end
 
 function love.update(dt)
