@@ -137,10 +137,18 @@ Love.Audio.Source = (function() {
 Love.Color = (function() {
     function Color(r, g, b, a) {
         if (typeof r != "number") {
-            this.r = r.getMember(1) || 0;
-            this.g = r.getMember(2) || 0;
-            this.b = r.getMember(3) || 0;
-            this.a = r.getMember(4) || 255;
+            if(typeof r == "string") {
+                var d = parseInt(/#([A-Fa-f0-9]*)/.exec(r)[1], 16);
+                this.r = d >> 16;
+                this.g = (d >> 8) & 255;
+                this.b = d & 255;
+                this.a = 255;
+            } else {
+                this.r = r.getMember(1) || 0;
+                this.g = r.getMember(2) || 0;
+                this.b = r.getMember(3) || 0;
+                this.a = r.getMember(4) || 255;
+            }
         } else {
             this.r = r || 0;
             this.g = g || 0;
@@ -603,8 +611,31 @@ Love.Graphics = (function() {
 
         //State
         //TODO: Implement all state functions
+        self.getBackgroundColor = function() {
+            var c = self.canvas.backgroundColor;
+            return [ c.r, c.g, c.b, c.a ];   
+        };
+        
+        self.getBlendMode = function() {
+            var c = self.ctx;
+            if(c.globalCompositeOperation == "source-over") {
+                return "alpha";
+            } else if(c.globalCompositeOperation == "multiply") {
+                return "multiplicative";
+            } else if(c.globalCompositeOperation == "lighten") {
+                return "additive";
+            } else {
+                return "normal";
+            }
+        };
+        
         self.getCanvas = function() {
             return self.canvas;  
+        };
+        
+        self.getColor = function() {
+            var c = new Love.Color(self.ctx.fillStyle);
+            return [c.r, c.g, c.b, self.ctx.globalAlpha * 255];
         };
         
         self.setCanvas = function(canvas) {
@@ -615,12 +646,7 @@ Love.Graphics = (function() {
         };
         
         self.setColor = function(r, g, b, a) {
-            var c, ctx = self.ctx;
-            if(typeof r == "number") {
-                c = new Love.Color(r, g, b, a);
-            } else {
-                c = new Love.Color(r);
-            }
+            var c = new Love.Color(r, g, b, a), ctx = self.ctx;
             ctx.fillStyle = c.as_string;
             ctx.strokeStyle = c.as_string;
             ctx.globalAlpha = c.a / 255;
@@ -884,26 +910,6 @@ Love.Graphics.Canvas2D = (function() {
     }
     
     function define(self, graphics) {
-        self.clear = function(_, r, g, b, a) {
-            var c, ctx = self.ctx;
-            if(r == null) {
-                c = self.canvas.backgroundColor;
-            } else {
-                if(typeof r == "number") {
-                    c = new Love.Color(r, g, b, a);
-                } else {
-                    c = new Love.Color(r);
-                }
-            }
-            if(c.a == 0) { return; }
-            ctx.save();
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.fillStyle = c.as_string;
-            ctx.globalAlpha = c.a / 255;
-            ctx.fillRect(0, 0, self.canvas.width, self.canvas.height);
-            ctx.restore();
-        };
-        
         self.getDimensions = function() {
             return [self.width, self.height];
         };
@@ -981,12 +987,7 @@ Love.Graphics.Canvas2D = (function() {
         };
         
         self.setBackgroundColor = function(r, g, b, a) {
-            var c;
-            if(typeof r == "number") {
-                c = new Love.Color(r, g, b, a);
-            } else {
-                c = new Love.Color(r);
-            }
+            var c = new Love.Color(r, g, b, a);
             self.backgroundColor = c;
         };
     }

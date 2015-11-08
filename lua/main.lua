@@ -4,6 +4,7 @@ function love.load()
     x = 0
     y = 0
     t = 0
+    asdf()
     --love.graphics.getCanvas():setFilter("nearest", "nearest")
     quad = love.graphics.newQuad(50, 0, 50, 25, 100, 50)
     love.graphics.setBackgroundColor(255, 0, 0)
@@ -43,7 +44,7 @@ end
 function love.draw()
     love.graphics.setColor({ 255, 0, 255 })
     love.graphics.circle("fill", 300, 300, 100, 5)
-    love.graphics.setColor(0, 0, 0)
+    love.graphics.setColor(123, 234, 21)
     love.graphics.line(0, 0, 300, 300)
 
     love.graphics.translate(x, y)
