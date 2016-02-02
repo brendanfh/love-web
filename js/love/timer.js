@@ -29,7 +29,7 @@ Love.Timer = (function() {
         };
         
         self.sleep = function() {
-            unimplemented("love.timer.sleep");  
+            neverimplemented("love.timer.sleep");  
         };
         
         self.step = function() {

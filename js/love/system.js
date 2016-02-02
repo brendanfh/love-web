@@ -55,6 +55,10 @@ Love.System = (function() {
         self.openURL = function(url) {
             window.open(url);
         };
+        
+        self.vibrate = function(seconds) {
+            navigator.vibrate(seconds * 1000);
+        };
     }
 
     return System;
